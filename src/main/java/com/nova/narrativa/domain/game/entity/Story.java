@@ -12,7 +12,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "stories")
+@Table(
+        name = "stories",
+        indexes = {
+                @Index(name = "idx_story_user_id", columnList = "user_id"),
+                @Index(name = "idx_story_game_id", columnList = "game_id"),
+                @Index(name = "idx_story_progress", columnList = "progress"),
+                @Index(name = "idx_story_created_at", columnList = "createdAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,11 +31,11 @@ public class Story {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)
     private Game game;
 
@@ -38,7 +46,7 @@ public class Story {
     private String choices;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Progress progress = Progress.IN_PROGRESS;
 
     @CreationTimestamp

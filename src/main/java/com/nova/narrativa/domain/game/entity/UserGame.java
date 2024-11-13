@@ -8,7 +8,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "user_games")
+@Table(
+        name = "user_games",
+        indexes = {
+                @Index(name = "idx_user_game_user_id", columnList = "user_id"),
+                @Index(name = "idx_user_game_game_id", columnList = "game_id"),
+                @Index(name = "idx_user_game_user_game", columnList = "user_id, game_id", unique = true)
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,12 +26,11 @@ public class UserGame {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)
     private Game game;
 }
-
