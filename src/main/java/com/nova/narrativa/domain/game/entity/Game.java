@@ -13,7 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "games")
+@Table(
+        name = "games",
+        indexes = {
+                @Index(name = "idx_game_type", columnList = "gameType"),
+                @Index(name = "idx_session_id", columnList = "sessionId"),
+                @Index(name = "idx_created_at", columnList = "createdAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,12 +32,13 @@ public class Game {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private GameType gameType;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false, length = 50)
     private String sessionId;
 
+    @Column(columnDefinition = "TEXT")
     private String result;
 
     @CreationTimestamp
@@ -39,14 +47,13 @@ public class Game {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Story> stories = new ArrayList<>();
 
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserGame> userGames = new ArrayList<>();
 
     public enum GameType {
         MYSTERY, SURVIVAL, ROMANCE, SIMULATION
     }
 }
-
