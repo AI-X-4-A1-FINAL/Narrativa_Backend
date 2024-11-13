@@ -11,7 +11,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "image_generations")
+@Table(
+        name = "image_generations",
+        indexes = {
+                @Index(name = "idx_image_generation_style", columnList = "style"),
+                @Index(name = "idx_image_generation_status", columnList = "status"),
+                @Index(name = "idx_image_generation_created_at", columnList = "createdAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,14 +30,14 @@ public class ImageGeneration {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Style style;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Status status = Status.PENDING;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true, length = 255)
     private String s3Url;
 
     @CreationTimestamp
@@ -47,4 +54,3 @@ public class ImageGeneration {
         PENDING, COMPLETED, FAILED
     }
 }
-
