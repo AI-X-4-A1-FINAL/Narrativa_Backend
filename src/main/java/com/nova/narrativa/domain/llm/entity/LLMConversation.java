@@ -12,7 +12,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "llm_generation")
+@Table(
+        name = "llm_conversations",
+        indexes = {
+                @Index(name = "idx_llm_user_id", columnList = "user_id"),
+                @Index(name = "idx_llm_status", columnList = "status"),
+                @Index(name = "idx_llm_created_at", columnList = "createdAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +30,7 @@ public class LLMConversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -34,7 +41,7 @@ public class LLMConversation {
     private String responseText;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Status status = Status.PENDING;
 
     @CreationTimestamp
@@ -47,4 +54,3 @@ public class LLMConversation {
         PENDING, COMPLETED, FAILED
     }
 }
-
