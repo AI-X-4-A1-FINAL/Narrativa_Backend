@@ -12,7 +12,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notices")
+@Table(
+        name = "notices",
+        indexes = {
+                @Index(name = "idx_notice_admin_user_id", columnList = "admin_user_id"),
+                @Index(name = "idx_notice_status", columnList = "status"),
+                @Index(name = "idx_notice_created_at", columnList = "createdAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,17 +30,17 @@ public class Notice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Status status = Status.ACTIVE;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_user_id", nullable = false)
     private AdminUser createdBy;
 
@@ -48,5 +55,3 @@ public class Notice {
         INACTIVE
     }
 }
-
-
