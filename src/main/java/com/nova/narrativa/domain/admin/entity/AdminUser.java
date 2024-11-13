@@ -11,7 +11,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "admin_users")
+@Table(
+        name = "admin_users",
+        indexes = {
+                @Index(name = "idx_admin_user_email", columnList = "email"),
+                @Index(name = "idx_admin_user_username", columnList = "username"),
+                @Index(name = "idx_admin_user_status", columnList = "status"),
+                @Index(name = "idx_admin_user_role", columnList = "role")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,23 +30,24 @@ public class AdminUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String username;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 100)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Role role = Role.SYSTEM_ADMIN;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Status status = Status.ACTIVE;
 
+    @Column
     private LocalDateTime lastLoginAt;
 
     @CreationTimestamp
