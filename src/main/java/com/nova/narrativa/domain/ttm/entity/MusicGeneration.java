@@ -11,7 +11,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "music_generations")
+@Table(
+        name = "music_generations",
+        indexes = {
+                @Index(name = "idx_music_genre", columnList = "genre"),
+                @Index(name = "idx_music_status", columnList = "status"),
+                @Index(name = "idx_music_created_at", columnList = "createdAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,16 +30,17 @@ public class MusicGeneration {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Genre genre;
 
+    @Column(nullable = true, length = 100)
     private String style;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Status status = Status.PENDING;
 
-    @Column(nullable = true)
+    @Column(nullable = true, unique = true, length = 255)
     private String s3Url;
 
     @CreationTimestamp
