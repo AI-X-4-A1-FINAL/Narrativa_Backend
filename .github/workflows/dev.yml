@@ -101,12 +101,28 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing Docker container and image
+        shell: pwsh
         run: |
-          docker stop narrativa_backend || true
-          docker rm narrativa_backend || true
-          docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest || true
+          try {
+            docker stop narrativa_backend
+          } catch {
+            Write-Output "Error stopping container: $_"
+          }
+
+          try {
+            docker rm narrativa_backend
+          } catch {
+            Write-Output "Error removing container: $_"
+          }
+
+          try {
+            docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+          } catch {
+            Write-Output "Error removing image: $_"
+          }
 
       - name: Pull Docker image from Docker Hub and run container
+        shell: pwsh
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
