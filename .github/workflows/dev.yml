@@ -103,14 +103,29 @@ jobs:
       - name: Remove existing Docker container and image
         shell: powershell
         run: |
-          docker stop narrativa_backend 2>NUL || echo "Container not running or already stopped"
-          docker rm narrativa_backend 2>NUL || echo "Container not found or already removed"
-          docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest 2>NUL || echo "Image not found or already removed"
+          try {
+            docker stop narrativa_backend -ErrorAction Stop
+          } catch {
+            Write-Output "Container not running or already stopped"
+          }
+
+          try {
+            docker rm narrativa_backend -ErrorAction Stop
+          } catch {
+            Write-Output "Container not found or already removed"
+          }
+
+          try {
+            docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest -ErrorAction Stop
+          } catch {
+            Write-Output "Image not found or already removed"
+          }
 
       - name: Pull Docker image from Docker Hub and run container
         shell: powershell
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+  
 
   
