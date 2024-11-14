@@ -105,27 +105,44 @@ jobs:
         run: |
           try {
             docker stop narrativa_backend
+            Write-Output "Successfully stopped container narrativa_backend"
           } catch {
-            Write-Output "Container not running or already stopped"
+            Write-Output "Error stopping container: $_"
           }
 
           try {
             docker rm narrativa_backend
+            Write-Output "Successfully removed container narrativa_backend"
           } catch {
-            Write-Output "Container not found or already removed"
+            Write-Output "Error removing container: $_"
           }
 
           try {
             docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            Write-Output "Successfully removed image narrativa_backend:latest"
           } catch {
-            Write-Output "Image not found or already removed"
+            Write-Output "Error removing image: $_"
           }
 
       - name: Pull Docker image from Docker Hub and run container
         shell: powershell
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
-          docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+          try {
+            docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            Write-Output "Successfully pulled the latest image from Docker Hub"
+          } catch {
+            Write-Output "Error pulling image from Docker Hub: $_"
+            exit 1
+          }
+
+          try {
+            docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            Write-Output "Successfully started container narrativa_backend"
+          } catch {
+            Write-Output "Error starting container: $_"
+            exit 1
+          }
+  
   
   
 
