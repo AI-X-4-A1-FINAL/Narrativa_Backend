@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true  # 서브모듈을 가져오기 위한 설정
+          token: ${{ secrets.MY_GITHUB_TOKEN }}  # 서브모듈 접근 권한을 위한 토큰 설정
           fetch-depth: 0     # 전체 기록을 가져옵니다.
 
       - name: Set up JDK 21
