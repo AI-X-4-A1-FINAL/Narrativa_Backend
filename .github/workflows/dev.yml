@@ -104,19 +104,19 @@ jobs:
         shell: powershell
         run: |
           try {
-            docker stop narrativa_backend -ErrorAction Stop
+            docker stop narrativa_backend
           } catch {
             Write-Output "Container not running or already stopped"
           }
 
           try {
-            docker rm narrativa_backend -ErrorAction Stop
+            docker rm narrativa_backend
           } catch {
             Write-Output "Container not found or already removed"
           }
 
           try {
-            docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest -ErrorAction Stop
+            docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           } catch {
             Write-Output "Image not found or already removed"
           }
@@ -126,6 +126,7 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+  
   
 
   
