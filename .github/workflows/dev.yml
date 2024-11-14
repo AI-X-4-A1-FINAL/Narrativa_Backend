@@ -103,6 +103,8 @@ jobs:
       - name: Remove existing Docker container and image
         shell: powershell
         run: |
+          $ErrorActionPreference = "Continue"
+
           try {
             docker stop narrativa_backend
           } catch {
@@ -126,4 +128,5 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+  
   
