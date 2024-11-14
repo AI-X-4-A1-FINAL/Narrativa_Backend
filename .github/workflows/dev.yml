@@ -1,0 +1,130 @@
+name: Auto Merge, Build, and Deploy to Docker Hub
+
+on:
+  schedule:
+    - cron: '05 3 * * *' # 매일 자정 00:00 (한국 시간, UTC+9 기준)
+  workflow_dispatch: # 수동 실행 가능
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto_merge_build_deploy:
+    runs-on: ubuntu-latest
+#    if: github.ref == 'refs/heads/main'  # 'main' 브랜치에서만 실행
+    outputs:
+      has_new_commits: ${{ env.has_new_commits }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Git 설정
+      - name: Configure Git
+        run: |
+          git config --global user.email "ppuding3861@gmail.com"
+          git config --global user.name "ppudding3861"
+
+      # feat/* 브랜치에서 dev 브랜치에 새 커밋이 있는지 확인
+      - name: Check for new commits in feat/* branches
+        id: check_commits
+        run: |
+          git fetch --all
+          NEW_COMMITS_COUNT=$(git rev-list --count --remotes="origin/feat/*" --not origin/dev)
+          echo "Number of new commits in feat/* branches: $NEW_COMMITS_COUNT"
+          if [ "$NEW_COMMITS_COUNT" -eq 0 ]; then
+            echo "No new commits in feat/* branches."
+            echo "has_new_commits=false" >> $GITHUB_ENV
+          else
+            echo "Found new commits in feat/* branches."
+            echo "has_new_commits=true" >> $GITHUB_ENV
+          fi
+
+      # 각 feat/* 브랜치의 변경 사항을 dev 브랜치로 PR 생성 또는 기존 PR 확인 후 병합
+      - name: Create or Find PRs from feat/* branches to dev
+        if: env.has_new_commits == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          echo "Attempting to create or find PRs from feat/* branches to dev."
+          git for-each-ref --format '%(refname:short)' refs/remotes/origin/feat/* | while read -r TARGET_BRANCH; do
+            TARGET_BRANCH=${TARGET_BRANCH#origin/} # Remove 'origin/' prefix
+            echo "Processing branch: $TARGET_BRANCH"
+          
+            PR_URL=$(gh pr list --base dev --head "$TARGET_BRANCH" --json url --jq '.[0].url' || echo "")
+            if [ -z "$PR_URL" ]; then
+              PR_URL=$(gh pr create --base dev --head "$TARGET_BRANCH" --title "Auto merge $TARGET_BRANCH into dev" --body "자동 생성된 Pull Request" || echo "")
+              echo "PR created: $PR_URL"
+            else
+              echo "Existing PR found: $PR_URL"
+            fi
+            echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+          done
+
+      # 모든 PR 자동 병합 (feat/* 브랜치 유지)
+      - name: Auto-merge pull requests
+        if: env.has_new_commits == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          echo "Merging all open PRs from feat/* to dev."
+          git for-each-ref --format '%(refname:short)' refs/remotes/origin/feat/* | while read -r TARGET_BRANCH; do
+            TARGET_BRANCH=${TARGET_BRANCH#origin/} # Remove 'origin/' prefix
+            PR_URL=$(gh pr list --base dev --head "$TARGET_BRANCH" --json url --jq '.[0].url' || echo "")
+            if [ -n "$PR_URL" ]; then
+              echo "Merging PR: $PR_URL"
+              gh pr merge "$PR_URL" --merge || echo "Merge failed for $PR_URL."
+            else
+              echo "No PR found for $TARGET_BRANCH to dev. Skipping merge."
+            fi
+          done
+
+      # Docker 빌드 및 Docker Hub 푸시
+      - name: Log in to Docker Hub
+        if: env.has_new_commits == 'true'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 중요한 수정: dev 브랜치로 체크아웃 후 Docker 빌드
+      - name: Build and push Docker image to Docker Hub
+        if: env.has_new_commits == 'true'
+        env:
+          REACT_APP_LLM: ${{ secrets.REACT_APP_LLM }}
+          REACT_APP_TTS: ${{ secrets.REACT_APP_TTS }}
+        run: |
+          # dev 브랜치로 체크아웃 후 빌드
+          git fetch origin dev
+          git checkout dev
+          git pull origin dev  # 최신 dev 브랜치 가져오기
+          
+          # Docker 빌드
+          docker build -t yaggugifrontapp --build-arg REACT_APP_LLM=$REACT_APP_LLM --build-arg REACT_APP_TTS=$REACT_APP_TTS .
+          docker tag yaggugifrontapp:latest ${{ secrets.DOCKER_USERNAME }}/yaggugifrontapp:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/yaggugifrontapp:latest
+
+  deploy_local:
+    runs-on: self-hosted
+    needs: auto_merge_build_deploy
+    if: needs.auto_merge_build_deploy.outputs.has_new_commits == 'true'
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Remove existing Docker container and image
+        shell: cmd
+        run: |
+          docker stop yaggugifrontapp 2>NUL || echo "Container not running or already stopped"
+          docker rm yaggugifrontapp 2>NUL || echo "Container not found or already removed"
+          docker rmi ${{ secrets.DOCKER_USERNAME }}/yaggugifrontapp:latest 2>NUL || echo "Image not found or already removed"
+
+      - name: Pull Docker image from Docker Hub and run container
+        shell: cmd
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/yaggugifrontapp:latest
+          docker run -d -p 3000:3000 --name yaggugifrontapp ${{ secrets.DOCKER_USERNAME }}/yaggugifrontapp:latest
