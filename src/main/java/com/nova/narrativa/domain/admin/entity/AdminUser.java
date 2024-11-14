@@ -57,7 +57,7 @@ public class AdminUser {
     private LocalDateTime updatedAt;
 
     public enum Role {
-        SUPPER_ADMIN,
+        SUPER_ADMIN,
         SYSTEM_ADMIN,
         CONTENT_ADMIN,
         SUPPORT_ADMIN
