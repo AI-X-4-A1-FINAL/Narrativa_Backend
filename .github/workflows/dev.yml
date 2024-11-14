@@ -124,6 +124,8 @@ jobs:
             Write-Output "Error removing image: $_"
           }
 
+          exit 0  # 오류 발생 여부에 관계없이 성공으로 간주
+
       - name: Pull Docker image from Docker Hub and run container
         shell: powershell
         run: |
@@ -132,7 +134,7 @@ jobs:
             Write-Output "Successfully pulled the latest image from Docker Hub"
           } catch {
             Write-Output "Error pulling image from Docker Hub: $_"
-            exit 1
+            exit 1  # 중요한 단계이므로 실패 시 exit 1로 설정
           }
 
           try {
@@ -140,8 +142,9 @@ jobs:
             Write-Output "Successfully started container narrativa_backend"
           } catch {
             Write-Output "Error starting container: $_"
-            exit 1
+            exit 1  # 중요한 단계이므로 실패 시 exit 1로 설정
           }
+  
   
   
   
