@@ -1,50 +1,92 @@
-name: Release Workflow
+name: Release Version Management
 
 on:
   push:
     branches:
-      - release
+      - main
+
+permissions:
+  contents: write  # GITHUB_TOKEN에 쓰기 권한 부여
 
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout the code
-      - name: Checkout code
+      - name: 저장소 체크아웃
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 태그를 푸시하기 위해 필요
 
-      # 2. Set up JDK
-      - name: Set up JDK 21
+      - name: Java 설정
         uses: actions/setup-java@v3
         with:
-          java-version: '21'
           distribution: 'temurin'
+          java-version: '21'
 
-      # 3. Build the project using Maven
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
+      - name: gradlew 실행 권한 부여
+        run: chmod +x ./gradlew
 
-      # 4. Run tests
-      - name: Run tests
-        run: mvn test
+      - name: 현재 Java 버전 확인
+        run: java -version
 
-      # 5. Create a new version tag
-      - name: Create Git Tag
-        id: tag
+      - name: 현재 Gradle 버전 확인
+        run: ./gradlew --version
+
+      - name: 현재 버전 가져오기
+        id: get_version
         run: |
-          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v$version" -m "Release v$version"
-          git push origin "v$version"
+          VERSION=$(./gradlew properties -q | grep "^version:" | awk -F ': ' '{print $2}' | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: VERSION 변수를 가져오지 못했습니다."
+            exit 1
+          fi
+          echo "현재 버전: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # 6. Create a release on GitHub
-      - name: Create GitHub Release
+      - name: 버전 증가
+        id: increment_version
+        run: |
+          echo "VERSION: $VERSION"
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          PATCH_VERSION=${VERSION_PARTS[2]}
+          # SNAPSHOT 제거
+          PATCH_VERSION=${PATCH_VERSION%-SNAPSHOT}
+          PATCH_VERSION=$((PATCH_VERSION+1))
+          NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH_VERSION-SNAPSHOT"
+          echo "새 버전: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          # 태그 버전에서 SNAPSHOT 제거
+          TAG_VERSION=${NEW_VERSION%-SNAPSHOT}
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+
+      - name: 버전 업데이트
+        run: |
+          echo "NEW_VERSION: $NEW_VERSION"
+          # gradle.properties에 버전이 정의되어 있는지 확인
+          if grep -q "^version=" gradle.properties; then
+            sed -i "s/^version=.*/version=$NEW_VERSION/" gradle.properties
+          else
+            # build.gradle에서 버전 업데이트
+            sed -i "s/^version = .*/version = '$NEW_VERSION'/" build.gradle
+          fi
+
+      - name: 변경 사항 커밋 및 푸시
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -am "Release version $NEW_VERSION"
+          git tag "v$TAG_VERSION"
+          git push origin HEAD:release --tags
+
+      - name: 릴리즈 생성
         uses: ncipollo/release-action@v1
         with:
-          tag: "v${{ steps.tag.outputs.version }}"
-          name: "Release v${{ steps.tag.outputs.version }}"
-          body: "New release for version v${{ steps.tag.outputs.version }}"
+          tag: "v${{ env.TAG_VERSION }}"
+          name: "Release ${{ env.TAG_VERSION }}"
+          body: "자동으로 생성된 릴리즈입니다."
           draft: false
           prerelease: false
+          generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
