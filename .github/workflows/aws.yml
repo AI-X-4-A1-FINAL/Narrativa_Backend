@@ -29,7 +29,12 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew clean build -x test
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            ./gradlew clean build
+          else
+            ./gradlew clean build -x test
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -47,7 +52,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: "latest"
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -70,7 +75,6 @@ jobs:
           wait-for-service-stability: true
           force-new-deployment: true
 
-      # New step: After deploying the new task, delete old tasks and images
       - name: Stop old ECS tasks
         if: success()
         run: |
@@ -83,7 +87,9 @@ jobs:
           ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         run: |
-          aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids imageTag=latest || true
+          # Delete only images not matching the latest SHA
+          aws ecr list-images --repository-name $ECR_REPOSITORY --filter "tagStatus=TAGGED" --query 'imageIds[?imageTag!=`'${{ github.sha }}`]' --output json |
+          aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids file://-
 
       - name: Scale ECS service back up
         if: success()
