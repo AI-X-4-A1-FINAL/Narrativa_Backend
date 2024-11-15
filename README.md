@@ -39,8 +39,8 @@ server:
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/narrativa_db?useSSL=false&serverTimezone=Asia/Seoul
-    username: your_db_username
-    password: your_db_password
+    username: [데이터베이스 사용자 이름]
+    password: [데이터베이스 비밀번호]
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
@@ -55,6 +55,8 @@ spring:
 ### 4. 실행
 ```bash
 ./gradlew bootRun
+
+# http://localhost:8080
 ```
 
 ## 🗝️ 브랜치 관리 규칙
@@ -193,6 +195,9 @@ Narrativa_Backend/
 프로젝트에 대한 문의사항이나 개선 제안은 이슈 탭에 등록해주세요.<br />
 기여를 원하시는 분은 Fork & Pull Request를 통해 참여해주시면 감사하겠습니다.
 
+## 🗝️ 라이선스
+
+이 프로젝트는 [MIT 라이선스](LICENSE)를 따릅니다.
 
 <br /><br />
 ![footer](https://github.com/user-attachments/assets/c30abbd9-8e89-4a4e-8823-33fe0cf843c9)
