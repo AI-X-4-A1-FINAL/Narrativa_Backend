@@ -1,4 +1,4 @@
-package com.nova.narrativa.domain.login.dto;
+package com.nova.narrativa.domain.user.dto;
 
 import lombok.Builder;
 import lombok.Data;

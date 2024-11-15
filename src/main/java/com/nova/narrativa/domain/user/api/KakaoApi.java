@@ -1,8 +1,8 @@
-package com.nova.narrativa.domain.login.api;
+package com.nova.narrativa.domain.user.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nova.narrativa.common.util.JsonParse;
-import com.nova.narrativa.domain.login.dto.GithubLoginResult;
+import com.nova.narrativa.domain.user.dto.KakaoLoginResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -13,25 +13,22 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.Map;
 
 @Slf4j
 @Component
-public class GithubApi {
+public class KakaoApi {
 
-    @Value("${spring.security.oauth2.client.registration.github.client-id}")
-    private String GITHUB_CLIENT_ID;
+    @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
+    private String KAKAO_CLIENT_ID;
 
-    @Value("${spring.security.oauth2.client.registration.github.client-secret}")
-    private String GITHUB_CLIENT_SECRET;
+    @Value("${spring.security.oauth2.client.registration.kakao.client-secret}")
+    private String KAKAO_CLIENT_SECRET;
 
-    @Value("${spring.security.oauth2.client.registration.github.redirect-uri}")
-    private String GITHUB_REDIRECT_URL;
+    @Value("${spring.security.oauth2.client.registration.kakao.redirect-uri}")
+    private String KAKAO_REDIRECT_URL;
 
-    private final static String GITHUB_AUTH_URI = "https://github.com";
-    private final static String GITHUB_API_URI = "https://api.github.com/user";
+    private final static String KAKAO_AUTH_URI = "https://kauth.kakao.com";
+    private final static String KAKAO_API_URI = "https://kapi.kakao.com";
 
     public String getUserInfo(String code) throws Exception {
         if (code == null) throw new Exception("Failed get authorization code");
@@ -44,28 +41,25 @@ public class GithubApi {
             headers.add("Content-Type", "application/x-www-form-urlencoded");
 
             LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("client_id", GITHUB_CLIENT_ID);
-            params.add("client_secret", GITHUB_CLIENT_SECRET);
-            params.add("code", code);
             params.add("grant_type", "authorization_code");
-//            params.add("redirect_uri", "http://localhost:8080/login/github");
+            params.add("client_id", KAKAO_CLIENT_ID);
+            params.add("client_secret", KAKAO_CLIENT_SECRET);
+            params.add("code", code);
+            params.add("redirect_uri", KAKAO_REDIRECT_URL);
 
             RestTemplate restTemplate = new RestTemplate();
             HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    GITHUB_AUTH_URI + "/login/oauth/access_token",
+                    KAKAO_AUTH_URI + "/oauth/token",
                     HttpMethod.POST,
                     httpEntity,
                     String.class
             );
 
-            log.info("response.getBody(): {}", response.getBody());
-
-            // UriComponentsBuilder를 사용하여 쿼리 파라미터 추출
-            Map<String, String> queryParams = UriComponentsBuilder.fromUriString("?" + response.getBody()).build().getQueryParams().toSingleValueMap();
-            accessToken = queryParams.get("access_token");
-            log.info("accessToken = {}", accessToken);
+            JsonNode node = JsonParse.parse(response.getBody());
+            log.info("node = {}", node);
+            accessToken = String.valueOf(node.findValue("access_token"));
         } catch (Exception e) {
             log.info("API call Failed: {}", e.getMessage());
             throw new Exception("API call Failed");
@@ -73,7 +67,7 @@ public class GithubApi {
         return accessToken;
     }
 
-    public GithubLoginResult getUserInfoWithToken(String accessToken) throws Exception {
+    public KakaoLoginResult getUserInfoWithToken(String accessToken) throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
@@ -82,8 +76,8 @@ public class GithubApi {
         RestTemplate rt = new RestTemplate();
         HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(headers);
         ResponseEntity<String> response = rt.exchange(
-                GITHUB_API_URI,
-                HttpMethod.GET,
+                KAKAO_API_URI + "/v2/user/me",
+                HttpMethod.POST,
                 httpEntity,
                 String.class
         );
@@ -93,13 +87,26 @@ public class GithubApi {
 
         // "id"를 가져오기 (long으로 반환)
         long id = jsonObject.get("id").asLong();
-        String nickname = jsonObject.get("login").asText();
-        String profile_image_url = jsonObject.get("avatar_url").asText();
 
-        return GithubLoginResult.builder()
+        // "properties" 객체에서 "nickname"과 "profile_image" 추출
+        JsonNode propertiesNode = jsonObject.get("properties");
+        String nickname = propertiesNode.get("nickname").asText();
+        String profile = propertiesNode.get("profile_image").asText();
+
+
+//        Member member = new Member();
+//        member.setMember_id(id);
+//        member.setUsername(nickname);
+//
+//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+//
+//        HttpSession session = request.getSession();
+//        session.setAttribute("member", member);
+
+        return KakaoLoginResult.builder()
                 .id(id)
                 .nickname(nickname)
-                .profile_image_url(profile_image_url)
+                .profile_image_url(profile)
                 .build();
     }
 }

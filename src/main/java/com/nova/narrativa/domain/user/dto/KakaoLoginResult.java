@@ -1,14 +1,13 @@
-package com.nova.narrativa.domain.login.dto;
+package com.nova.narrativa.domain.user.dto;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Builder
 @Data
-public class GoogleLoginResult {
+public class KakaoLoginResult {
 
-    private Long id;
+    private long id;
     private String nickname;
     private String profile_image_url;
-    private String email;
 }

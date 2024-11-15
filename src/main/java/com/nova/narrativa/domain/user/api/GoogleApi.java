@@ -1,8 +1,8 @@
-package com.nova.narrativa.domain.login.api;
+package com.nova.narrativa.domain.user.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nova.narrativa.common.util.JsonParse;
-import com.nova.narrativa.domain.login.dto.GoogleLoginResult;
+import com.nova.narrativa.domain.user.dto.GoogleLoginResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;

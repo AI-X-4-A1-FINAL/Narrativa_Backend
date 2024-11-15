@@ -1,8 +1,8 @@
-package com.nova.narrativa.domain.login.controller;
+package com.nova.narrativa.domain.user.controller;
 
-import com.nova.narrativa.domain.login.service.GithubService;
-import com.nova.narrativa.domain.login.service.GoogleService;
-import com.nova.narrativa.domain.login.service.KakaoService;
+import com.nova.narrativa.domain.user.service.GithubService;
+import com.nova.narrativa.domain.user.service.GoogleService;
+import com.nova.narrativa.domain.user.service.KakaoService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
-package com.nova.narrativa.domain.login.service;
+package com.nova.narrativa.domain.user.service;
 
-import com.nova.narrativa.domain.login.api.KakaoApi;
-import com.nova.narrativa.domain.login.dto.KakaoLoginResult;
+import com.nova.narrativa.domain.user.api.KakaoApi;
+import com.nova.narrativa.domain.user.dto.KakaoLoginResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
