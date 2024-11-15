@@ -87,9 +87,15 @@ jobs:
           ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         run: |
-          # Delete only images not matching the latest SHA
-          aws ecr list-images --repository-name $ECR_REPOSITORY --filter "tagStatus=TAGGED" --query 'imageIds[?imageTag!=`'${{ github.sha }}`]' --output json |
-          aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids file://-
+          # List and delete only images not matching the latest SHA
+          aws ecr list-images --repository-name $ECR_REPOSITORY --filter "tagStatus=TAGGED" \
+            --query "imageIds[?imageTag!='${{ github.sha }}']" --output json > old-images.json
+          
+          if [ -s old-images.json ]; then
+            aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids file://old-images.json
+          else
+            echo "No old images to delete."
+          fi
 
       - name: Scale ECS service back up
         if: success()
