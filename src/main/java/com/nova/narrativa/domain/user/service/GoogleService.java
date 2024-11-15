@@ -1,7 +1,7 @@
 package com.nova.narrativa.domain.user.service;
 
 import com.nova.narrativa.domain.user.api.GoogleApi;
-import com.nova.narrativa.domain.user.dto.GoogleLoginResult;
+import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,14 +13,14 @@ public class GoogleService {
 
     private final GoogleApi googleApi;
 
-    public GoogleLoginResult googleLogin(String AuthCode) throws Exception {
+    public SocialLoginResult googleLogin(String AuthCode) throws Exception {
 
         // 2. 토큰 받기
         String accessToken = googleApi.getUserInfo(AuthCode);
         log.info("accessToken = {}", accessToken);
 
         // 3. 사용자 정보 받기
-        GoogleLoginResult userInfoWithToken = googleApi.getUserInfoWithToken(accessToken);
+        SocialLoginResult userInfoWithToken = googleApi.getUserInfoWithToken(accessToken);
         log.info("userInfoWithToken = {}", userInfoWithToken);
 
         return userInfoWithToken;
