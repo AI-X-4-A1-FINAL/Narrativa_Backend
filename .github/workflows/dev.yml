@@ -68,6 +68,13 @@ jobs:
             fi
           done
 
+      # Docker Compose 설치
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
+
       # Docker Compose 빌드 및 Docker Hub 푸시
       - name: Log in to Docker Hub
         if: env.has_new_commits == 'true'
@@ -76,7 +83,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Docker Compose 빌드 및 푸시
       - name: Build and push Docker image using Docker Compose
         if: env.has_new_commits == 'true'
         run: |
