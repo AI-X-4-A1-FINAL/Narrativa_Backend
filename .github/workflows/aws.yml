@@ -34,10 +34,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install Docker Compose (if not already available)
+      - name: Install Docker Compose
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
+        # Verify installation
+      - name: Verify Docker Compose installation
+        run: docker compose version
+
+      - name: Verify AWS CLI installation
+        run: aws --version
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -67,11 +73,10 @@ jobs:
           container-name: ${{ secrets.CONTAINER_NAME }}
           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Deploy Amazon ECS task definition with Force New Deployment
+      - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ secrets.ECS_SERVICE }}
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
-          force-new-deployment: true
