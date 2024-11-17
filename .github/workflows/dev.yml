@@ -114,7 +114,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing containers and images
-        shell: bash
+        shell: pwsh
         run: |
           docker-compose down || echo "No containers to remove"
           docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest || echo "No images to remove"
@@ -127,7 +127,7 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
 
-        shell: bash
+        shell: pwsh
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker-compose up -d
