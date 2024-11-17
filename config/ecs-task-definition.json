@@ -3,8 +3,8 @@
   "networkMode": "awsvpc",
   "containerDefinitions": [
     {
-      "name": "narrativa-backend-container",
-      "image": "${IMAGE_URI}",
+      "name": "narrativa-backend-container", // 컨테이너 이름
+      "image": "${IMAGE_URI}", // Actions에서 IMAGE_URI 값으로 대체
       "essential": true,
       "portMappings": [
         {
