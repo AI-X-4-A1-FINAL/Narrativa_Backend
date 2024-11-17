@@ -2,7 +2,7 @@ package com.nova.narrativa.domain.user.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nova.narrativa.common.util.JsonParse;
-import com.nova.narrativa.domain.user.dto.GoogleLoginResult;
+import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -66,7 +66,7 @@ public class GoogleApi {
         return accessToken;
     }
 
-    public GoogleLoginResult getUserInfoWithToken(String accessToken) throws Exception {
+    public SocialLoginResult getUserInfoWithToken(String accessToken) throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
@@ -87,13 +87,11 @@ public class GoogleApi {
         long id = jsonObject.get("sub").asLong();
         String nickname = jsonObject.get("name").asText();
         String picture_url = jsonObject.get("picture").asText();
-        String email = jsonObject.get("email").asText();
 
-        return GoogleLoginResult.builder()
+        return SocialLoginResult.builder()
                 .id(id)
                 .nickname(nickname)
                 .profile_image_url(picture_url)
-                .email(email)
                 .build();
     }
 }
