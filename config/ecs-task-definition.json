@@ -3,7 +3,7 @@
   "networkMode": "awsvpc",
   "containerDefinitions": [
     {
-      "name": "narrativa-backend-container",
+      "name": "narrativa-backnd-container",
       "image": "${IMAGE_URI}",
       "essential": true,
       "portMappings": [
