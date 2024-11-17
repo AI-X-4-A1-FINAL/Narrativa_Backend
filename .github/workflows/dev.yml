@@ -85,6 +85,13 @@ jobs:
 
       - name: Build and push Docker image using Docker Compose
         if: env.has_new_commits == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
+
         run: |
           git fetch origin dev
           git checkout dev
@@ -113,6 +120,13 @@ jobs:
           docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest || echo "No images to remove"
 
       - name: Pull Docker image from Docker Hub and run using Docker Compose
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
+
         shell: bash
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
