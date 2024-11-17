@@ -33,12 +33,13 @@ cd narrativa-backend
 `src/main/resources/application.yml` 파일을 다음과 같이 설정합니다:
 
 ```yaml
+# yaml 예시
 server:
   port: 8080
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/narrativa_db?useSSL=false&serverTimezone=Asia/Seoul
+    url: jdbc:mysql://localhost:3306/[데이터베이스 이름]?useSSL=false&serverTimezone=Asia/Seoul
     username: [데이터베이스 사용자 이름]
     password: [데이터베이스 비밀번호]
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -163,16 +164,13 @@ Narrativa_Backend/
 ## 🗝️ 팀 정보
 
 ### **Part Leader**
-  <br />
   <img src="https://github.com/user-attachments/assets/6e4a6035-db22-414a-b051-b59fd646d9cd" 
        alt="hs" 
        width="200" 
        height="auto" 
        style="max-width: 100%; height: auto;">
-  <br />
 
 ### **Team Member**
-  <br />
   <img src="https://github.com/user-attachments/assets/bb285012-1e08-4bd7-9c63-d6f73c80f713" 
        alt="st" 
        width="200" 

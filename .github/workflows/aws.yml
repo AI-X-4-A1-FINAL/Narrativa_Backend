@@ -1,9 +1,9 @@
-name: Deploy to Amazon ECS
+name: Deploy to Amazon ECS using Docker Compose
 
 on:
   push:
     branches: ["main"]
-  workflow_dispatch: # 수동 실행 가능
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,12 +12,8 @@ jobs:
     environment: production
 
     steps:
-      - name: Checkout repository and submodules
+      - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          submodules: true
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
-          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
@@ -29,12 +25,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            ./gradlew clean build
-          else
-            ./gradlew clean build -x test
-          fi
+        run: ./gradlew clean build -x test
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -43,18 +34,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Download application.yml from S3
+        run: |
+          aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/${{ secrets.S3_FILE_KEY }} src/main/resources/application.yml
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push new image to Amazon ECR
-        id: build-image
+      - name: Build and tag Docker image using Docker Compose
         env:
           ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker-compose -f docker-compose.yml build narrativa-backend
+          docker tag narrativa-backend:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
@@ -74,30 +73,3 @@ jobs:
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
           force-new-deployment: true
-
-      - name: Stop old ECS tasks
-        if: success()
-        run: |
-          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --desired-count 0
-          aws ecs wait services-stable --cluster ${{ secrets.ECS_CLUSTER }} --services ${{ secrets.ECS_SERVICE }}
-
-      - name: Delete old images in ECR
-        if: success()
-        env:
-          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        run: |
-          # List and delete only images not matching the latest SHA
-          aws ecr list-images --repository-name $ECR_REPOSITORY --filter "tagStatus=TAGGED" \
-            --query "imageIds[?imageTag!='${{ github.sha }}']" --output json > old-images.json
-          
-          if [ -s old-images.json ]; then
-            aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids file://old-images.json
-          else
-            echo "No old images to delete."
-          fi
-
-      - name: Scale ECS service back up
-        if: success()
-        run: |
-          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --desired-count 1
