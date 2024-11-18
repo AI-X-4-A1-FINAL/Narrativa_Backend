@@ -40,11 +40,14 @@ public class User {
     private String email;
 
     @Column(length = 255)
+    private String profile;
+
+    @Column(length = 255)
     private String profile_url;     // null 이면 front에서 기본 이미지 띄우고, 있으면 해당 url 띄우기
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private Role role = Role.USER;
+    private Role role = Role.ROLE_USER;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -63,7 +66,7 @@ public class User {
     private List<UserGame> userGames = new ArrayList<>();
 
     public enum Role {
-        USER, VIP
+        ROLE_USER, ROLE_VIP
     }
 
     public enum Status {
