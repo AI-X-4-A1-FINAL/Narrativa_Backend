@@ -115,23 +115,13 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing containers and images
-        shell: pwsh
+        shell: bash
         run: |
+      
+          docker-compose down || echo "No containers to remove or an error occurred"
 
-          try {
-            docker-compose down
-            Write-Output "Successfully stopped and removed containers"
-          } catch {
-            Write-Output "No containers to remove or an error occurred: $_"
-          }
-
-
-          try {
-            docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
-            Write-Output "Successfully removed image narrativa_backend:latest"
-          } catch {
-            Write-Output "No images to remove or an error occurred: $_"
-          }
+     
+          docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest || echo "No images to remove or an error occurred"
 
       - name: Pull Docker image from Docker Hub and run using Docker Compose
         env:
@@ -140,24 +130,13 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
-        shell: pwsh
+        shell: bash
         run: |
-
-          try {
-            docker-compose pull narrativa-backend
-            Write-Output "Successfully pulled the latest Docker image"
-          } catch {
-            Write-Output "Error pulling the Docker image: $_"
-            exit 1
-          }
-
       
-          try {
-            docker-compose up -d
-            Write-Output "Successfully started containers using Docker Compose"
-          } catch {
-            Write-Output "Error starting containers: $_"
-            exit 1
-          }
+          docker-compose pull narrativa-backend || echo "Error pulling the Docker image"
+
+   
+          docker-compose up -d || echo "Error starting containers"
+  
   
   
