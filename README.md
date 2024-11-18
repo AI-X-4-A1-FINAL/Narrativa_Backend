@@ -33,14 +33,15 @@ cd narrativa-backend
 `src/main/resources/application.yml` 파일을 다음과 같이 설정합니다:
 
 ```yaml
+# yaml 예시
 server:
   port: 8080
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/narrativa_db?useSSL=false&serverTimezone=Asia/Seoul
-    username: your_db_username
-    password: your_db_password
+    url: jdbc:mysql://localhost:3306/[데이터베이스 이름]?useSSL=false&serverTimezone=Asia/Seoul
+    username: [데이터베이스 사용자 이름]
+    password: [데이터베이스 비밀번호]
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
@@ -55,6 +56,8 @@ spring:
 ### 4. 실행
 ```bash
 ./gradlew bootRun
+
+# http://localhost:8080
 ```
 
 ## 🗝️ 브랜치 관리 규칙
@@ -161,16 +164,13 @@ Narrativa_Backend/
 ## 🗝️ 팀 정보
 
 ### **Part Leader**
-  <br />
   <img src="https://github.com/user-attachments/assets/6e4a6035-db22-414a-b051-b59fd646d9cd" 
        alt="hs" 
        width="200" 
        height="auto" 
        style="max-width: 100%; height: auto;">
-  <br />
 
 ### **Team Member**
-  <br />
   <img src="https://github.com/user-attachments/assets/bb285012-1e08-4bd7-9c63-d6f73c80f713" 
        alt="st" 
        width="200" 
@@ -193,6 +193,9 @@ Narrativa_Backend/
 프로젝트에 대한 문의사항이나 개선 제안은 이슈 탭에 등록해주세요.<br />
 기여를 원하시는 분은 Fork & Pull Request를 통해 참여해주시면 감사하겠습니다.
 
+## 🗝️ 라이선스
+
+이 프로젝트는 [MIT 라이선스](LICENSE)를 따릅니다.
 
 <br /><br />
 ![footer](https://github.com/user-attachments/assets/c30abbd9-8e89-4a4e-8823-33fe0cf843c9)

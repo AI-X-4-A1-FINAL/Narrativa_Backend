@@ -1,9 +1,9 @@
-name: Deploy to Amazon ECS
+name: Deploy to Amazon ECS using Docker Compose
 
 on:
   push:
     branches: ["main"]
-  workflow_dispatch: # 수동 실행 가능
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,12 +12,8 @@ jobs:
     environment: production
 
     steps:
-      - name: Checkout repository and submodules
+      - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          submodules: true
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
-          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
@@ -38,18 +34,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+        # Verify installation
+      - name: Verify Docker Compose installation
+        run: docker compose version
+
+      - name: Verify AWS CLI installation
+        run: aws --version
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push new image to Amazon ECR
-        id: build-image
+      - name: Build and tag Docker image using Docker Compose
         env:
           ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: "latest"
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker compose build \
+            --build-arg AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            --build-arg AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --build-arg AWS_REGION=${{ secrets.AWS_REGION }} \
+            --build-arg S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }} \
+            --build-arg S3_FILE_KEY=${{ secrets.S3_FILE_KEY }}
+          docker tag narrativa-backend:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
@@ -59,33 +71,12 @@ jobs:
         with:
           task-definition: config/ecs-task-definition.json
           container-name: ${{ secrets.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
+          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Deploy Amazon ECS task definition with Force New Deployment
+      - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ secrets.ECS_SERVICE }}
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
-          force-new-deployment: true
-
-      # New step: After deploying the new task, delete old tasks and images
-      - name: Stop old ECS tasks
-        if: success()
-        run: |
-          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --desired-count 0
-          aws ecs wait services-stable --cluster ${{ secrets.ECS_CLUSTER }} --services ${{ secrets.ECS_SERVICE }}
-
-      - name: Delete old images in ECR
-        if: success()
-        env:
-          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        run: |
-          aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids imageTag=latest || true
-
-      - name: Scale ECS service back up
-        if: success()
-        run: |
-          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --desired-count 1
