@@ -1,6 +1,7 @@
 package com.nova.narrativa.domain.user.controller;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
+
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.SignUpService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,6 @@ public class SignController {
     @PostMapping("/sign-up")
     public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
         log.info("Sign up: {}", signUp);
-
         try {
             // 회원가입 처리
             signUpService.register(signUp);
