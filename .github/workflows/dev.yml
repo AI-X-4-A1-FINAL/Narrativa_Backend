@@ -106,6 +106,7 @@ jobs:
     runs-on: self-hosted
     needs: auto_merge_build_deploy
     if: needs.auto_merge_build_deploy.outputs.has_new_commits == 'true'
+
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -116,8 +117,19 @@ jobs:
       - name: Remove existing containers and images
         shell: pwsh
         run: |
-          docker-compose down || echo "No containers to remove"
-          docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest || echo "No images to remove"
+          try {
+            docker-compose down
+            Write-Output "Successfully stopped and removed containers"
+          } catch {
+            Write-Output "No containers to remove or an error occurred: $_"
+          }
+
+          try {
+            docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            Write-Output "Successfully removed image narrativa_backend:latest"
+          } catch {
+            Write-Output "No images to remove or an error occurred: $_"
+          }
 
       - name: Pull Docker image from Docker Hub and run using Docker Compose
         env:
@@ -126,8 +138,20 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
-
         shell: pwsh
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
-          docker-compose up -d
+          try {
+            docker-compose pull narrativa-backend
+            Write-Output "Successfully pulled the latest Docker image"
+          } catch {
+            Write-Output "Error pulling the Docker image: $_"
+            exit 1
+          }
+
+          try {
+            docker-compose up -d
+            Write-Output "Successfully started containers using Docker Compose"
+          } catch {
+            Write-Output "Error starting containers: $_"
+            exit 1
+          }
