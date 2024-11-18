@@ -22,13 +22,13 @@ jobs:
           token: ${{ secrets.MY_GITHUB_TOKEN }}
           submodules: true
 
-      # Git 설정
+
       - name: Configure Git
         run: |
           git config --global user.email "ppuding3861@gmail.com"
           git config --global user.name "ppudding3861"
 
-      # feat/* 브랜치에서 dev 브랜치에 새 커밋이 있는지 확인
+
       - name: Check for new commits in feat/* branches
         id: check_commits
         run: |
@@ -40,7 +40,7 @@ jobs:
             echo "has_new_commits=true" >> $GITHUB_ENV
           fi
 
-      # 각 feat/* 브랜치의 변경 사항을 dev 브랜치로 PR 생성 또는 기존 PR 확인 후 병합
+
       - name: Create or Find PRs from feat/* branches to dev
         if: env.has_new_commits == 'true'
         env:
@@ -54,7 +54,7 @@ jobs:
             fi
           done
 
-      # 모든 PR 자동 병합 (feat/* 브랜치 유지)
+
       - name: Auto-merge pull requests
         if: env.has_new_commits == 'true'
         env:
@@ -68,14 +68,14 @@ jobs:
             fi
           done
 
-      # Docker Compose 설치
+
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
 
-      # Docker Compose 빌드 및 Docker Hub 푸시
+
       - name: Log in to Docker Hub
         if: env.has_new_commits == 'true'
         uses: docker/login-action@v2
@@ -97,7 +97,7 @@ jobs:
           git checkout dev
           git pull origin dev
 
-          # Docker Compose 빌드 및 푸시
+  
           docker-compose build narrativa-backend
           docker tag narrativa-backend:latest ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
@@ -117,7 +117,7 @@ jobs:
       - name: Remove existing containers and images
         shell: pwsh
         run: |
-          # Stop and remove existing containers
+
           try {
             docker-compose down
             Write-Output "Successfully stopped and removed containers"
@@ -125,7 +125,7 @@ jobs:
             Write-Output "No containers to remove or an error occurred: $_"
           }
 
-          # Remove existing Docker image
+
           try {
             docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
             Write-Output "Successfully removed image narrativa_backend:latest"
@@ -142,7 +142,7 @@ jobs:
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
         shell: pwsh
         run: |
-          # Pull the latest Docker image
+
           try {
             docker-compose pull narrativa-backend
             Write-Output "Successfully pulled the latest Docker image"
@@ -151,7 +151,7 @@ jobs:
             exit 1
           }
 
-          # Start containers using Docker Compose
+      
           try {
             docker-compose up -d
             Write-Output "Successfully started containers using Docker Compose"
