@@ -42,9 +42,6 @@ public class User {
     @Column(length = 255)
     private String profile_url;     // null 이면 front에서 기본 이미지 띄우고, 있으면 해당 url 띄우기
 
-//    @Column(nullable = false, length = 255)
-//    private String password;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role = Role.USER;
