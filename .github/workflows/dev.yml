@@ -115,7 +115,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing containers and images
-        working-directory: .
+        working-directory: ${{ github.workspace }}
         shell: pwsh
         run: |
           try {
@@ -133,14 +133,14 @@ jobs:
           }
 
       - name: Pull Docker image from Docker Hub and run using Docker Compose
-        working-directory: .
+        working-directory: ${{ github.workspace }}
+        shell: pwsh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
-        shell: pwsh
         run: |
           try {
             docker-compose pull narrativa-backend
@@ -157,6 +157,7 @@ jobs:
             Write-Output "Error starting containers: $_"
             exit 1
           }
+  
   
   
   
