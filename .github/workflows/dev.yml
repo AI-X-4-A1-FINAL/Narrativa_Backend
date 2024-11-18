@@ -115,21 +115,20 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing containers and images
-        shell: pwsh
         run: |
-          try {
-            docker-compose down
-            Write-Output "Successfully stopped and removed containers"
-          } catch {
-            Write-Output "No containers to remove or an error occurred: $_"
-          }
+          # Stop and remove existing containers
+          if docker-compose down; then
+            echo "Successfully stopped and removed containers"
+          else
+            echo "No containers to remove or an error occurred"
+          fi
 
-          try {
-            docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
-            Write-Output "Successfully removed image narrativa_backend:latest"
-          } catch {
-            Write-Output "No images to remove or an error occurred: $_"
-          }
+          # Remove existing Docker image
+          if docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest; then
+            echo "Successfully removed image narrativa_backend:latest"
+          else
+            echo "No images to remove or an error occurred"
+          fi
 
       - name: Pull Docker image from Docker Hub and run using Docker Compose
         env:
@@ -138,20 +137,20 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
-        shell: pwsh
         run: |
-          try {
-            docker-compose pull narrativa-backend
-            Write-Output "Successfully pulled the latest Docker image"
-          } catch {
-            Write-Output "Error pulling the Docker image: $_"
+          # Pull the latest Docker image
+          if docker-compose pull narrativa-backend; then
+            echo "Successfully pulled the latest Docker image"
+          else
+            echo "Error pulling the Docker image"
             exit 1
-          }
+          fi
 
-          try {
-            docker-compose up -d
-            Write-Output "Successfully started containers using Docker Compose"
-          } catch {
-            Write-Output "Error starting containers: $_"
+          # Start containers using Docker Compose
+          if docker-compose up -d; then
+            echo "Successfully started containers using Docker Compose"
+          else
+            echo "Error starting containers"
             exit 1
-          }
+          fi
+  
