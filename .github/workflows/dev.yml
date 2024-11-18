@@ -118,14 +118,19 @@ jobs:
         shell: pwsh
         run: |
           try {
-            docker-compose down
-            Write-Output "Successfully stopped and removed containers"
+            # 강제로 컨테이너 중지 및 제거
+            docker ps -a --filter "ancestor=${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest" --format "{{.ID}}" | ForEach-Object {
+              docker stop $_
+              docker rm $_
+            }
+            Write-Output "Successfully stopped and removed all related containers"
           } catch {
             Write-Output "No containers to remove or an error occurred: $_"
           }
 
           try {
-            docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            # 이미지를 강제로 삭제
+            docker rmi -f ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
             Write-Output "Successfully removed image narrativa_backend:latest"
           } catch {
             Write-Output "No images to remove or an error occurred: $_"
