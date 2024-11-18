@@ -114,8 +114,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Remove existing containers and images
-        working-directory: ${{ github.workspace }}
+      - name: Pull Docker image from Docker Hub
+        shell: pwsh
+        run: |
+          try {
+            docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            Write-Output "Successfully pulled the latest Docker image"
+          } catch {
+            Write-Output "Error pulling the Docker image: $_"
+            exit 1
+          }
+
+      - name: Remove existing containers
         shell: pwsh
         run: |
           try {
@@ -125,15 +135,7 @@ jobs:
             Write-Output "No containers to remove or an error occurred: $_"
           }
 
-          try {
-            docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
-            Write-Output "Successfully removed image narrativa_backend:latest"
-          } catch {
-            Write-Output "No images to remove or an error occurred: $_"
-          }
-
-      - name: Pull Docker image from Docker Hub and run using Docker Compose
-        working-directory: ${{ github.workspace }}
+      - name: Run containers using Docker Compose
         shell: pwsh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -143,20 +145,13 @@ jobs:
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
         run: |
           try {
-            docker-compose pull narrativa-backend
-            Write-Output "Successfully pulled the latest Docker image"
-          } catch {
-            Write-Output "Error pulling the Docker image: $_"
-            exit 1
-          }
-
-          try {
             docker-compose up -d
             Write-Output "Successfully started containers using Docker Compose"
           } catch {
             Write-Output "Error starting containers: $_"
             exit 1
           }
+  
   
   
   
