@@ -115,6 +115,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing containers and images
+        working-directory: .
         shell: pwsh
         run: |
           try {
@@ -156,6 +157,7 @@ jobs:
             Write-Output "Error starting containers: $_"
             exit 1
           }
+  
   
   
   
