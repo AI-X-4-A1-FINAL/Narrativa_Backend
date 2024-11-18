@@ -91,8 +91,8 @@ jobs:
           git pull origin dev
 
           # Docker Compose 빌드 및 푸시
-          docker-compose build narrativa-backend
-          docker-compose push narrativa-backend
+          docker-compose build
+          docker-compose push
 
   deploy_local:
     runs-on: self-hosted
@@ -109,8 +109,19 @@ jobs:
       - name: Remove existing containers and images
         shell: pwsh
         run: |
-          docker-compose down || echo "No containers to remove"
-          docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest || echo "No images to remove"
+          try {
+            docker-compose down
+            Write-Output "Successfully stopped containers."
+          } catch {
+            Write-Output "No containers to remove or an error occurred: $_"
+          }
+
+          try {
+            docker image rm ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
+            Write-Output "Successfully removed old image."
+          } catch {
+            Write-Output "No images to remove or an error occurred: $_"
+          }
 
       - name: Pull Docker image from Docker Hub and run using Docker Compose
         env:
@@ -121,5 +132,18 @@ jobs:
           S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
         shell: pwsh
         run: |
-          docker-compose pull narrativa-backend
-          docker-compose up -d
+          try {
+            docker-compose pull narrativa-backend
+            Write-Output "Successfully pulled the latest image."
+          } catch {
+            Write-Output "Failed to pull the image: $_"
+            exit 1
+          }
+
+          try {
+            docker-compose up -d
+            Write-Output "Successfully started the container."
+          } catch {
+            Write-Output "Failed to start the container: $_"
+            exit 1
+          }
