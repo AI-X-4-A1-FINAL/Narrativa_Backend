@@ -115,7 +115,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Remove existing containers and images
-        working-directory: docker-compose.yml
         shell: pwsh
         run: |
           try {
