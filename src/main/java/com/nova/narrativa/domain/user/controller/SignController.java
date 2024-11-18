@@ -1,15 +1,20 @@
 package com.nova.narrativa.domain.user.controller;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
+import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.SignUpService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-@RequestMapping("/api/users")
+import java.util.Optional;
+
+@RequestMapping("/api")
 @Slf4j
 @RequiredArgsConstructor
 @RestController
@@ -17,7 +22,7 @@ public class SignController {
 
     private final SignUpService signUpService;
 
-    @PostMapping("/sign-up")
+    @PostMapping("/users/sign-up")
     public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
         log.info("Sign up: {}", signUp);
 
@@ -31,7 +36,7 @@ public class SignController {
         }
     }
 
-    @PutMapping("/{userId}/deactivate")
+    @PutMapping("/users/{userId}/deactivate")
     public ResponseEntity<String> deactivate(@PathVariable Long userId) {
         log.info("Deactivate user: {}", userId);
 
@@ -45,10 +50,35 @@ public class SignController {
         }
     }
 
-    @PutMapping("/{userId}")
+    @PutMapping("/users/{userId}")
     public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody User UpdateUser) {
         log.info("Update user: {}", UpdateUser);
 
         return signUpService.updateUser(userId, UpdateUser);
+    }
+
+    @PostMapping("/users/check-email")
+    public ResponseEntity<Object> checkEmail(String email) {
+        log.info("Check email: {}", email);
+
+        Optional<User> user = signUpService.findUserByEmail(email);
+        log.info("Check email User: {}", user);
+
+        if (user.isPresent()) {
+            return new ResponseEntity<>("", HttpStatus.CONFLICT);
+        } else {
+            return new ResponseEntity<>("", HttpStatus.OK);
+        }
+    }
+
+    @GetMapping("/get-social-login-result")
+    public ResponseEntity<SocialLoginResult> getSocialLoginResult(HttpSession session) {
+        SocialLoginResult result = (SocialLoginResult) session.getAttribute("SocialLoginResult");
+
+        if (result != null) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 }

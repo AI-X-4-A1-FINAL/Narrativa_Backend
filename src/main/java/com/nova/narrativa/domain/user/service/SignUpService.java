@@ -119,4 +119,8 @@ public class SignUpService {
         userRepository.save(existingUser);
         return ResponseEntity.ok(existingUser);
     }
+
+    public Optional<User> findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }
