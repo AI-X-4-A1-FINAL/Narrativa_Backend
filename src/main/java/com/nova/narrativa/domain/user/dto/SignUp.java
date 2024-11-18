@@ -5,10 +5,11 @@ import lombok.Data;
 
 @Builder
 @Data
-public class GoogleLoginResult {
+public class SignUp {
 
-    private Long id;
-    private String nickname;
-    private String profile_image_url;
+    private String username;
     private String email;
+    private String profile;
+    private String profile_url;
+
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Builder
 @Data
-public class KakaoLoginResult {
+public class SocialLoginResult {
 
     private long id;
     private String nickname;
