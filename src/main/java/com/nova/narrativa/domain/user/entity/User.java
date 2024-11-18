@@ -3,10 +3,7 @@ package com.nova.narrativa.domain.user.entity;
 import com.nova.narrativa.domain.game.entity.Story;
 import com.nova.narrativa.domain.game.entity.UserGame;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -29,20 +26,24 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"stories", "userGames"})
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private String username;
 
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
-    @Column(nullable = false, length = 255)
-    private String password;
+    @Column(length = 255)
+    private String profile_url;     // null 이면 front에서 기본 이미지 띄우고, 있으면 해당 url 띄우기
+
+//    @Column(nullable = false, length = 255)
+//    private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
