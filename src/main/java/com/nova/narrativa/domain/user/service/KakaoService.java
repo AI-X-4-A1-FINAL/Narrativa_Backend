@@ -14,9 +14,6 @@ public class KakaoService {
     private final KakaoApi kakaoApi;
 
     public SocialLoginResult kakaoLogin(String AuthCode) throws Exception {
-//        // 1. 인가 코드 받기
-//        String AuthCode = kakaoApi.getAuthCode();
-//        System.out.println("AuthCode = " + AuthCode);
 
         // 2. 토큰 받기
         String accessToken = kakaoApi.getUserInfo(AuthCode);
