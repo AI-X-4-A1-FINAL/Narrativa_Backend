@@ -64,9 +64,8 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserGame> userGames = new ArrayList<>();
 
-    public enum Origin {
-        KAKAO, GOOGLE, GITHUB
-    }
+    @Enumerated(EnumType.STRING)
+    private LoginType loginType;
 
     public enum Role {
         ROLE_USER, ROLE_VIP

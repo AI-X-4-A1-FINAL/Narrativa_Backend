@@ -30,7 +30,7 @@ public class SignController {
         try {
             // 회원가입 처리
             signUpService.register(signUp);
-            return ResponseEntity.status(201).body("User registered successfully");
+            return ResponseEntity.status(201).body("회원 가입 성공하셨습니다.");
         } catch (ResponseStatusException e) {
             // 이메일 중복 시 400 에러 처리
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
