@@ -58,6 +58,7 @@ public class SocialLoginController {
             throw new RuntimeException(e);
         }
 
+        log.info("redirectWithParams = {}", redirectWithParams);
         return new ModelAndView("redirect:" + redirectWithParams);
     }
 
@@ -74,6 +75,7 @@ public class SocialLoginController {
             throw new RuntimeException(e);
         }
 
+        log.info("redirectWithParams = {}", redirectWithParams);
         return new ModelAndView("redirect:" + redirectWithParams);
     }
 
@@ -90,6 +92,7 @@ public class SocialLoginController {
             throw new RuntimeException(e);
         }
 
+        log.info("redirectWithParams = {}", redirectWithParams);
         return new ModelAndView("redirect:" + redirectWithParams);
     }
 

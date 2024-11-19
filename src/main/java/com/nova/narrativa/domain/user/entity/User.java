@@ -16,7 +16,6 @@ import java.util.List;
         name = "users",
         indexes = {
                 @Index(name = "idx_user_username", columnList = "username"),
-                @Index(name = "idx_user_email", columnList = "email"),
                 @Index(name = "idx_user_status", columnList = "status"),
                 @Index(name = "idx_user_role", columnList = "role"),
                 @Index(name = "idx_user_created_at", columnList = "createdAt")
@@ -33,11 +32,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private Long user_id;
+
     @Column(nullable = false, length = 50)
     private String username;
-
-    @Column(unique = true, nullable = false, length = 100)
-    private String email;
 
     @Column(length = 255)
     private String profile;
@@ -64,6 +63,10 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserGame> userGames = new ArrayList<>();
+
+    public enum Origin {
+        KAKAO, GOOGLE, GITHUB
+    }
 
     public enum Role {
         ROLE_USER, ROLE_VIP

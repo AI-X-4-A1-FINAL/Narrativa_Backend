@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @Table(
         name = "admin_users",
         indexes = {
-                @Index(name = "idx_admin_user_email", columnList = "email"),
                 @Index(name = "idx_admin_user_username", columnList = "username"),
                 @Index(name = "idx_admin_user_status", columnList = "status"),
                 @Index(name = "idx_admin_user_role", columnList = "role")
@@ -32,9 +31,6 @@ public class AdminUser {
 
     @Column(nullable = false, length = 50)
     private String username;
-
-    @Column(unique = true, nullable = false, length = 100)
-    private String email;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

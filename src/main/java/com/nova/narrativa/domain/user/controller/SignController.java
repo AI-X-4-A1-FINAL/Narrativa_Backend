@@ -22,6 +22,7 @@ public class SignController {
 
     private final SignUpService signUpService;
 
+    // 회원가입
     @PostMapping("/users/sign-up")
     public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
         log.info("Sign up: {}", signUp);
@@ -36,6 +37,7 @@ public class SignController {
         }
     }
 
+    // 회원탈퇴
     @PutMapping("/users/{userId}/deactivate")
     public ResponseEntity<String> deactivate(@PathVariable Long userId) {
         log.info("Deactivate user: {}", userId);
@@ -50,6 +52,7 @@ public class SignController {
         }
     }
 
+    // 회원정보 업데이트
     @PutMapping("/users/{userId}")
     public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody User UpdateUser) {
         log.info("Update user: {}", UpdateUser);
@@ -57,20 +60,7 @@ public class SignController {
         return signUpService.updateUser(userId, UpdateUser);
     }
 
-    @PostMapping("/users/check-email")
-    public ResponseEntity<Object> checkEmail(String email) {
-        log.info("Check email: {}", email);
-
-        Optional<User> user = signUpService.findUserByEmail(email);
-        log.info("Check email User: {}", user);
-
-        if (user.isPresent()) {
-            return new ResponseEntity<>("", HttpStatus.CONFLICT);
-        } else {
-            return new ResponseEntity<>("", HttpStatus.OK);
-        }
-    }
-
+    // 소셜 로그인 여부 확인
     @GetMapping("/get-social-login-result")
     public ResponseEntity<SocialLoginResult> getSocialLoginResult(HttpSession session) {
         SocialLoginResult result = (SocialLoginResult) session.getAttribute("SocialLoginResult");

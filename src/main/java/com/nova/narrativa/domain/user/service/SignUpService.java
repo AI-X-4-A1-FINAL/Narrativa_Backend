@@ -22,14 +22,9 @@ public class SignUpService {
 
     public void register(SignUp signUp) {
         // 이메일 중복 체크
-        Optional<User> existingUser = userRepository.findByEmail(signUp.getEmail());
-        if (existingUser.isPresent()) {
-            // 이미 존재하는 이메일이라면 400 에러를 던짐
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "해당 이메일로 가입된 유저가 이미 존재합니다.");
-        }
+//        Optional<User> existingUser = userRepository.findByEmail(signUp.getEmail());
 
         User signUpUser = new User();
-        signUpUser.setEmail(signUp.getEmail());
         signUpUser.setUsername(signUp.getUsername());
         signUpUser.setProfile(signUp.getProfile());
         signUpUser.setProfile_url(signUp.getProfile_url());
@@ -105,9 +100,6 @@ public class SignUpService {
         if (updateUser.getUsername() != null && !updateUser.getUsername().equals(existingUser.getUsername())) {
             existingUser.setUsername(updateUser.getUsername());
         }
-        if (updateUser.getEmail() != null && !updateUser.getEmail().equals(existingUser.getEmail())) {
-            existingUser.setEmail(updateUser.getEmail());
-        }
         if (updateUser.getProfile() != null && !updateUser.getProfile().equals(existingUser.getProfile())) {
             existingUser.setProfile(updateUser.getProfile());
         }
@@ -117,9 +109,5 @@ public class SignUpService {
 
         userRepository.save(existingUser);
         return ResponseEntity.ok(existingUser);
-    }
-
-    public Optional<User> findUserByEmail(String email) {
-        return userRepository.findByEmail(email);
     }
 }
