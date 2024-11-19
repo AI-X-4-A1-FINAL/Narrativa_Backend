@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -19,15 +20,30 @@ import java.util.Enumeration;
 
 @RequestMapping("/login")
 @Slf4j
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @RestController
 public class SocialLoginController {
 
     private final KakaoService kakaoService;
     private final GoogleService googleService;
     private final GithubService githubService;
+    private final String frontUrl;
+    private final String frontSignupPart;
+    private final String redirectUrl;
 
-    private static String redirectUrl = "http://localhost:3000/sign-up";
+    public SocialLoginController(KakaoService kakaoService,
+                                 GoogleService googleService,
+                                 GithubService githubService,
+                                 @Value("${front.url}") String frontUrl,
+                                 @Value("${front.signup-part}") String frontSignupPart) {
+
+        this.kakaoService = kakaoService;
+        this.googleService = googleService;
+        this.githubService = githubService;
+        this.frontUrl = frontUrl;
+        this.frontSignupPart = frontSignupPart;
+        this.redirectUrl = frontUrl + frontSignupPart;
+    }
 
     @GetMapping("/kakao")
     public ModelAndView kakaoLogin(@RequestParam String code) {
