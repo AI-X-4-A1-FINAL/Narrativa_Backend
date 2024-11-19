@@ -90,7 +90,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
+          S3_FILE_KEY: ${{ secrets.S3_FILE_KEYY }}
 
         run: |
           git fetch origin dev
@@ -129,7 +129,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
+          S3_FILE_KEY: ${{ secrets.S3_FILE_KEYY }}
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
           docker run -d -p 8080:8080 --name narrativa_backend ${{ secrets.DOCKER_USERNAME }}/narrativa_backend:latest
