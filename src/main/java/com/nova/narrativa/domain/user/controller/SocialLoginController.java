@@ -53,7 +53,8 @@ public class SocialLoginController {
         try {
             socialLoginResult = kakaoService.kakaoLogin(code);
             redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url();
+                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                    + "&id=" + socialLoginResult.getId();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -70,7 +71,8 @@ public class SocialLoginController {
         try {
             socialLoginResult = googleService.googleLogin(code);
             redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url();
+                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                    + "&id=" + socialLoginResult.getId();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -87,7 +89,8 @@ public class SocialLoginController {
         try {
             socialLoginResult = githubService.githubLogin(code);
             redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url();
+                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                    + "&id=" + socialLoginResult.getId();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
