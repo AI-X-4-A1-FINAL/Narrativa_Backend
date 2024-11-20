@@ -1,4 +1,3 @@
-
 services:
   narrativa-backend:
     build:
@@ -9,16 +8,21 @@ services:
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
         AWS_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-        S3_FILE_KEY: ${S3_FILE_KEY}
+        S3_FILE_KEY: ${S3_FILE_KEY} # AWS Secrets에서 전달받은 값
     image: narrativa-backend:latest
     container_name: narrativa-backend
     ports:
-      - "8080:8080" # 로컬 포트 8080을 컨테이너 포트 8080에 매핑
+      - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: production # 스프링 프로파일 설정
+      SPRING_PROFILES_ACTIVE: production # ECS 프로파일 활성화
       SPRING_CONFIG_LOCATION: /app/config/application.yml
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_FILE_KEY: ${S3_FILE_KEY}
     volumes:
-      - narrativa-logs:/app/logs # 로그 디렉토리를 호스트와 공유
+      - narrativa-logs:/app/logs
     restart: unless-stopped
 
 volumes:
