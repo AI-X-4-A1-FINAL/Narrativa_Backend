@@ -84,9 +84,10 @@ public class GoogleApi {
         JsonNode jsonObject = JsonParse.parse(response.getBody());
         log.info("jsonObject = {}", jsonObject);
 
-        long id = jsonObject.get("sub").asLong();
+        String id = jsonObject.get("sub").asText();
         String nickname = jsonObject.get("name").asText();
         String picture_url = jsonObject.get("picture").asText();
+        log.info("id: {}", id);
 
         return SocialLoginResult.builder()
                 .id(id)

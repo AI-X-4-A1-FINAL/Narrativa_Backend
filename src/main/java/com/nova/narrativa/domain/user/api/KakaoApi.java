@@ -86,7 +86,7 @@ public class KakaoApi {
         log.info("jsonObject = {}", jsonObject);
 
         // "id"를 가져오기 (long으로 반환)
-        long id = jsonObject.get("id").asLong();
+        String id = jsonObject.get("id").asText();
 
         // "properties" 객체에서 "nickname"과 "profile_image" 추출
         JsonNode propertiesNode = jsonObject.get("properties");

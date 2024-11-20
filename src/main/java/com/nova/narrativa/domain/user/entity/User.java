@@ -32,8 +32,8 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long user_id;
+    @Column(nullable = false, name = "user_id")
+    private String userId;
 
     @Column(nullable = false, length = 50)
     private String username;
@@ -52,6 +52,10 @@ public class User {
     @Column(nullable = false, length = 20)
     private Status status = Status.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private LoginType loginType;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -64,8 +68,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserGame> userGames = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
-    private LoginType loginType;
+    public enum LoginType {
+        KAKAO, GOOGLE, GITHUB
+    }
 
     public enum Role {
         ROLE_USER, ROLE_VIP
@@ -74,4 +79,6 @@ public class User {
     public enum Status {
         ACTIVE, INACTIVE, BANNED
     }
+
+
 }

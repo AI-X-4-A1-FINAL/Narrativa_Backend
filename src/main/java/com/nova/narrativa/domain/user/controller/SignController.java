@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.Optional;
 
@@ -24,7 +26,7 @@ public class SignController {
 
     // 회원가입
     @PostMapping("/users/sign-up")
-    public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
+    public ModelAndView signUp(@RequestBody SignUp signUp) {
         log.info("Sign up: {}", signUp);
 
         try {
@@ -32,7 +34,11 @@ public class SignController {
             signUpService.register(signUp);
             return ResponseEntity.status(201).body("회원 가입 성공하셨습니다.");
         } catch (ResponseStatusException e) {
-            // 이메일 중복 시 400 에러 처리
+            // 409 에러 시 /home으로 리다이렉트 프론트에 요청
+            if (e.getStatusCode() == HttpStatus.CONFLICT) {
+                return new ResponseEntity<String>("/home", HttpStatus.OK);  // 리다이렉트 경로 설정
+            }
+            // 그 외의 오류는 그대로 반환
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
     }
