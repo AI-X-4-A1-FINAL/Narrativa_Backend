@@ -15,6 +15,9 @@ jobs:
       # 1. 레포지토리 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # 전체 히스토리 가져오기
+          submodules: true
 
       # 2. Java 환경 설정
       - name: Set up JDK 21
@@ -62,7 +65,8 @@ jobs:
       - name: Verify docker-compose.ecs.yml file exists
         run: |
           if [ ! -f docker-compose.ecs.yml ]; then
-            echo "ERROR: docker-compose.ecs.yml file not found."
+            echo "ERROR: docker-compose.ecs.yml file not found in project root."
+            ls -al
             exit 1
           fi
 
