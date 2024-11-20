@@ -55,7 +55,7 @@ public class SocialLoginController {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = "";
-        String loginType = "KAKAO";
+
         try {
             socialLoginResult = kakaoService.kakaoLogin(code);
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
@@ -71,7 +71,7 @@ public class SocialLoginController {
                 redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
                         + "&profile_url=" + socialLoginResult.getProfile_image_url()
                         + "&id=" + socialLoginResult.getId()
-                        + "&type=" + loginType;
+                        + "&type=" + User.LoginType.KAKAO;
             }
 
         } catch (Exception e) {
@@ -87,7 +87,6 @@ public class SocialLoginController {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = "";
-        String loginType = "GOOGLE";
         try {
             socialLoginResult = googleService.googleLogin(code);
             log.info("socialLoginResult = {}", socialLoginResult);
@@ -104,7 +103,7 @@ public class SocialLoginController {
                 redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
                         + "&profile_url=" + socialLoginResult.getProfile_image_url()
                         + "&id=" + socialLoginResult.getId()
-                        + "&type=" + loginType;
+                        + "&type=" + User.LoginType.GOOGLE;
             }
 
         } catch (Exception e) {
@@ -120,12 +119,25 @@ public class SocialLoginController {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = "";
+
         try {
             socialLoginResult = githubService.githubLogin(code);
-            redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
-                    + "&id=" + socialLoginResult.getId()
-                    + "&type=GITHUB";
+            UserExistenceDto userExistenceDto = UserExistenceDto.builder()
+                    .userId(socialLoginResult.getId())
+                    .loginType(User.LoginType.GITHUB)
+                    .build();
+            log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
+
+            // DB 조회 후, 해당 유저 존재시 /home으로 redirect
+            if (signUpService.isUserExist(userExistenceDto)) {
+                redirectWithParams = frontUrl + "/home";
+            } else {
+                redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
+                        + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                        + "&id=" + socialLoginResult.getId()
+                        + "&type=" + User.LoginType.GITHUB;
+            }
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
