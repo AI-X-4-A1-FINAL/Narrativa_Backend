@@ -1,6 +1,7 @@
 package com.nova.narrativa.domain.user.service;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
+import com.nova.narrativa.domain.user.dto.UserExistenceDto;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -104,5 +105,9 @@ public class SignUpService {
 
         userRepository.save(existingUser);
         return ResponseEntity.ok(existingUser);
+    }
+
+    public boolean isUserExist(UserExistenceDto userExistenceDto) {
+        return userRepository.existsByUserIdAndLoginType(userExistenceDto.getUserId(), userExistenceDto.getLoginType());
     }
 }
