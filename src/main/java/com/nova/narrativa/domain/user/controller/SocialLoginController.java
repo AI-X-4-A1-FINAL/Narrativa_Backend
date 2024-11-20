@@ -7,7 +7,9 @@ import com.nova.narrativa.domain.user.service.GithubService;
 import com.nova.narrativa.domain.user.service.GoogleService;
 import com.nova.narrativa.domain.user.service.KakaoService;
 import com.nova.narrativa.domain.user.service.SignUpService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.net.URLEncoder;
 import java.util.Enumeration;
+import java.util.Optional;
 
 @RequestMapping("/login")
 @Slf4j
@@ -50,8 +53,10 @@ public class SocialLoginController {
         this.redirectUrl = frontUrl + frontSignupPart;
     }
 
+    // TODO: 로그인 중복 코드 정리
+
     @GetMapping("/kakao")
-    public ModelAndView kakaoLogin(@RequestParam String code) {
+    public ModelAndView kakaoLogin(@RequestParam String code, HttpServletResponse response) {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = "";
@@ -73,6 +78,15 @@ public class SocialLoginController {
                         + "&id=" + socialLoginResult.getId()
                         + "&type=" + User.LoginType.KAKAO;
             }
+
+            Long id = signUpService.getUserId(userExistenceDto).map(User::getId)
+                    .orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+            log.info("id = {}", id);
+
+            // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
+            String cookieContent = String.format("id=%d; SameSite=None; Secure; HttpOnly; Path=/", id);
+            log.info("cookieContent: {}", cookieContent);
+            response.setHeader("Set-Cookie", cookieContent);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -165,4 +179,6 @@ public class SocialLoginController {
         session.invalidate();  // 세션 무효화
         return ResponseEntity.ok().body("로그아웃 성공");
     }
+
+
 }
