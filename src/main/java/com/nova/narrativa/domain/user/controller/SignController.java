@@ -26,7 +26,7 @@ public class SignController {
 
     // 회원가입
     @PostMapping("/users/sign-up")
-    public ModelAndView signUp(@RequestBody SignUp signUp) {
+    public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
         log.info("Sign up: {}", signUp);
 
         try {
