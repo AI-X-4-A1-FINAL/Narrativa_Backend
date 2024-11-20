@@ -1,16 +1,21 @@
 package com.nova.narrativa.domain.user.controller;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
-
+import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.SignUpService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.view.RedirectView;
 
-@RequestMapping("/api/users")
+import java.util.Optional;
+
+@RequestMapping("/api")
 @Slf4j
 @RequiredArgsConstructor
 @RestController
@@ -18,20 +23,27 @@ public class SignController {
 
     private final SignUpService signUpService;
 
-    @PostMapping("/sign-up")
+    // 회원가입
+    @PostMapping("/users/sign-up")
     public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
         log.info("Sign up: {}", signUp);
+
         try {
             // 회원가입 처리
             signUpService.register(signUp);
-            return ResponseEntity.status(201).body("User registered successfully");
+            return ResponseEntity.status(201).body("회원 가입 성공하셨습니다.");
         } catch (ResponseStatusException e) {
-            // 이메일 중복 시 400 에러 처리
+            // 409 에러 시 /home으로 리다이렉트 프론트에 요청
+            if (e.getStatusCode() == HttpStatus.CONFLICT) {
+                return ResponseEntity.status(409).body("회원 가입이 이미되어있습니다.");
+            }
+            // 그 외의 오류는 그대로 반환
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
     }
 
-    @PutMapping("/{userId}/deactivate")
+    // 회원탈퇴
+    @PutMapping("/users/{userId}/deactivate")
     public ResponseEntity<String> deactivate(@PathVariable Long userId) {
         log.info("Deactivate user: {}", userId);
 
@@ -45,10 +57,23 @@ public class SignController {
         }
     }
 
-    @PutMapping("/{userId}")
+    // 회원정보 업데이트
+    @PutMapping("/users/{userId}")
     public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody User UpdateUser) {
         log.info("Update user: {}", UpdateUser);
 
         return signUpService.updateUser(userId, UpdateUser);
+    }
+
+    // 소셜 로그인 여부 확인
+    @GetMapping("/get-social-login-result")
+    public ResponseEntity<SocialLoginResult> getSocialLoginResult(HttpSession session) {
+        SocialLoginResult result = (SocialLoginResult) session.getAttribute("SocialLoginResult");
+
+        if (result != null) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 }

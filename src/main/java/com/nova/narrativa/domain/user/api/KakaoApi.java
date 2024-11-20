@@ -86,22 +86,12 @@ public class KakaoApi {
         log.info("jsonObject = {}", jsonObject);
 
         // "id"를 가져오기 (long으로 반환)
-        long id = jsonObject.get("id").asLong();
+        String id = jsonObject.get("id").asText();
 
         // "properties" 객체에서 "nickname"과 "profile_image" 추출
         JsonNode propertiesNode = jsonObject.get("properties");
         String nickname = propertiesNode.get("nickname").asText();
         String profile = propertiesNode.get("profile_image").asText();
-
-
-//        Member member = new Member();
-//        member.setMember_id(id);
-//        member.setUsername(nickname);
-//
-//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-//
-//        HttpSession session = request.getSession();
-//        session.setAttribute("member", member);
 
         return SocialLoginResult.builder()
                 .id(id)

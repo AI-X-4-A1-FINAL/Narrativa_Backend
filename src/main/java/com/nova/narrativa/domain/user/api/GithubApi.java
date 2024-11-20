@@ -92,7 +92,7 @@ public class GithubApi {
         log.info("jsonObject = {}", jsonObject);
 
         // "id"를 가져오기 (long으로 반환)
-        long id = jsonObject.get("id").asLong();
+        String id = jsonObject.get("id").asText();
         String nickname = jsonObject.get("login").asText();
         String profile_image_url = jsonObject.get("avatar_url").asText();
 

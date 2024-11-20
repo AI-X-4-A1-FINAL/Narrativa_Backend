@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class SocialLoginResult {
 
-    private long id;
+    private String id;
     private String nickname;
     private String profile_image_url;
 }
