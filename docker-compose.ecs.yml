@@ -8,16 +8,16 @@ services:
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
         AWS_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-        S3_FILE_KEY: ${S3_FILE_KEY}
-    image: narrativa-backend:latest
-    container_name: narrativa-backend
+        S3_FILE_KEY: ${S3_FILE_KEY} # ECS에서 사용하는 환경 변수
+    image: narrativa-backend:latest # ECS 배포용 이미지 이름
+    container_name: narrativa-backend # ECS에서 실행될 컨테이너 이름
     ports:
-      - "8080:8080"
+      - "8080:8080" # 포트 매핑
     environment:
-      SPRING_PROFILES_ACTIVE: production
-      SPRING_CONFIG_LOCATION: /app/config/application.yml
+      SPRING_PROFILES_ACTIVE: production # 프로파일을 production으로 설정
+      SPRING_CONFIG_LOCATION: /app/config/application.yml # 기본 설정 파일 경로
     volumes:
-      - narrativa-logs:/app/logs
+      - narrativa-logs:/app/logs # 로그를 볼륨으로 공유
     restart: unless-stopped
 
 volumes:
