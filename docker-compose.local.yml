@@ -8,7 +8,7 @@ services:
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
         AWS_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-        S3_FILE_KEYY: ${S3_FILE_KEYY}
+        S3_FILE_KEY: ${S3_FILE_KEYY}
     image: narrativa_backend_dev:latest # 이미지 이름을 서비스 이름과 일치
     container_name: narrativa_backend_dev # 컨테이너 이름 지정
     ports:
