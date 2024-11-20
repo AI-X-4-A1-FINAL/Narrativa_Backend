@@ -53,11 +53,14 @@ public class SocialLoginController {
         try {
             socialLoginResult = kakaoService.kakaoLogin(code);
             redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url();
+                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                    + "&id=" + socialLoginResult.getId()
+                    + "&type=KAKAO";
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+        log.info("redirectWithParams = {}", redirectWithParams);
         return new ModelAndView("redirect:" + redirectWithParams);
     }
 
@@ -69,11 +72,14 @@ public class SocialLoginController {
         try {
             socialLoginResult = googleService.googleLogin(code);
             redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url();
+                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                    + "&id=" + socialLoginResult.getId()
+                    + "&type=GOOGLE";
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+        log.info("redirectWithParams = {}", redirectWithParams);
         return new ModelAndView("redirect:" + redirectWithParams);
     }
 
@@ -85,11 +91,14 @@ public class SocialLoginController {
         try {
             socialLoginResult = githubService.githubLogin(code);
             redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                    + "&profile_url=" + socialLoginResult.getProfile_image_url();
+                    + "&profile_url=" + socialLoginResult.getProfile_image_url()
+                    + "&id=" + socialLoginResult.getId()
+                    + "&type=GITHUB";
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+        log.info("redirectWithParams = {}", redirectWithParams);
         return new ModelAndView("redirect:" + redirectWithParams);
     }
 

@@ -1,6 +1,7 @@
 package com.nova.narrativa.domain.user.service;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
+import com.nova.narrativa.domain.user.entity.LoginType;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,38 +22,28 @@ public class SignUpService {
     private final UserRepository userRepository;
 
     public void register(SignUp signUp) {
-        // 이메일 중복 체크
-        Optional<User> existingUser = userRepository.findByEmail(signUp.getEmail());
-        if (existingUser.isPresent()) {
-            // 이미 존재하는 이메일이라면 400 에러를 던짐
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "해당 이메일로 가입된 유저가 이미 존재합니다.");
+        // DB 조회 후, 해당 계정 중복 체크
+        if(userRepository.existsByUserIdAndLoginType(signUp.getUser_id(), LoginType.valueOf(signUp.getLogin_type()))){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "해당 유저는 이미 회원가입이 완료되었습니다.");
+        } else {
+            User signUpUser = new User();
+            signUpUser.setUser_id(signUp.getUser_id());
+            signUpUser.setUsername(signUp.getUsername());
+            signUpUser.setProfile_url(signUp.getProfile_url());
+            signUpUser.setLoginType(LoginType.valueOf(signUp.getLogin_type()));
+
+            // 이메일이 없으면 새로운 회원가입 진행
+            userRepository.save(signUpUser);
         }
-
-        User signUpUser = new User();
-        signUpUser.setEmail(signUp.getEmail());
-        signUpUser.setUsername(signUp.getUsername());
-        signUpUser.setProfile(signUp.getProfile());
-        signUpUser.setProfile_url(signUp.getProfile_url());
-
-        // 이메일이 없으면 새로운 회원가입 진행
-        userRepository.save(signUpUser);
     }
 
     // 로그인한 유저의 ID와 RequestParam으로 받은 id를 비교하는 로직
     public String isLoggedInUser(Long id) {
-//        // SecurityContext에서 로그인한 사용자 정보 가져오기
-//        UserDetails currentUser = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//
-//        // 현재 로그인한 유저의 username (혹은 이메일 등)을 사용하여 해당 유저를 조회
-//        String currentUsername = currentUser.getUsername();
-//        Optional<User> loggedInUser = userRepository.findByUsername(currentUsername);
-//        log.info("loggedInUser: {}", loggedInUser);
 
         System.out.println("id = " + id);
         Optional<User> loggedInUser = userRepository.findById(id);
 
         // 로그인한 유저의 ID와 요청된 id를 비교
-
 
         if (loggedInUser.isPresent() && loggedInUser.get().getId().equals(id)) {
             updateStatusToInactive(id);
@@ -105,9 +96,6 @@ public class SignUpService {
         if (updateUser.getUsername() != null && !updateUser.getUsername().equals(existingUser.getUsername())) {
             existingUser.setUsername(updateUser.getUsername());
         }
-        if (updateUser.getEmail() != null && !updateUser.getEmail().equals(existingUser.getEmail())) {
-            existingUser.setEmail(updateUser.getEmail());
-        }
         if (updateUser.getProfile() != null && !updateUser.getProfile().equals(existingUser.getProfile())) {
             existingUser.setProfile(updateUser.getProfile());
         }
@@ -117,9 +105,5 @@ public class SignUpService {
 
         userRepository.save(existingUser);
         return ResponseEntity.ok(existingUser);
-    }
-
-    public Optional<User> findUserByEmail(String email) {
-        return userRepository.findByEmail(email);
     }
 }

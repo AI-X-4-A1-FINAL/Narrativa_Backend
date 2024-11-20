@@ -7,9 +7,8 @@ import lombok.Data;
 @Data
 public class SignUp {
 
+    private Long user_id;
     private String username;
-    private String email;
-    private String profile;
     private String profile_url;
-
+    private String login_type;
 }

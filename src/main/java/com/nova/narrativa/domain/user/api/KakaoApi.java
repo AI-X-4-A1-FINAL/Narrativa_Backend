@@ -93,16 +93,6 @@ public class KakaoApi {
         String nickname = propertiesNode.get("nickname").asText();
         String profile = propertiesNode.get("profile_image").asText();
 
-
-//        Member member = new Member();
-//        member.setMember_id(id);
-//        member.setUsername(nickname);
-//
-//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-//
-//        HttpSession session = request.getSession();
-//        session.setAttribute("member", member);
-
         return SocialLoginResult.builder()
                 .id(id)
                 .nickname(nickname)
