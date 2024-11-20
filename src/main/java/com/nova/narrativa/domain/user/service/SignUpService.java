@@ -1,7 +1,6 @@
 package com.nova.narrativa.domain.user.service;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
-import com.nova.narrativa.domain.user.entity.LoginType;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +22,14 @@ public class SignUpService {
 
     public void register(SignUp signUp) {
         // DB 조회 후, 해당 계정 중복 체크
-        if(userRepository.existsByUserIdAndLoginType(signUp.getUser_id(), LoginType.valueOf(signUp.getLogin_type()))){
+        if(userRepository.existsByUserIdAndLoginType(signUp.getUser_id(), User.LoginType.valueOf(signUp.getLogin_type()))){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "해당 유저는 이미 회원가입이 완료되었습니다.");
         } else {
             User signUpUser = new User();
-            signUpUser.setUser_id(signUp.getUser_id());
+            signUpUser.setUserId(signUp.getUser_id());
             signUpUser.setUsername(signUp.getUsername());
             signUpUser.setProfile_url(signUp.getProfile_url());
-            signUpUser.setLoginType(LoginType.valueOf(signUp.getLogin_type()));
+            signUpUser.setLoginType(User.LoginType.valueOf(signUp.getLogin_type()));
 
             // 이메일이 없으면 새로운 회원가입 진행
             userRepository.save(signUpUser);
