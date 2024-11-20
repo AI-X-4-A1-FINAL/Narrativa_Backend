@@ -78,22 +78,22 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image using Docker Compose
-        if: env.has_new_commits == 'true'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_FILE_KEYY: ${{ secrets.S3_FILE_KEYY }}
-
+          S3_FILE_KEYY: ${{ secrets.S3_FILE_KEYY }} # S3_FILE_KEYY 전달
         run: |
           git fetch origin dev
           git checkout dev
           git pull origin dev
 
+          # Build the Docker image for the local environment
           docker compose -f docker-compose.local.yml build narrativa_backend_dev
           docker tag narrativa_backend_dev:latest ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
+  
 
   deploy_local:
     runs-on: self-hosted
@@ -122,6 +122,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_FILE_KEYY: ${{ secrets.S3_FILE_KEYY }}
+          S3_FILE_KEY_OVERRIDE: ${{ secrets.S3_FILE_KEYY }}
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
           docker run -d -p 8080:8080 --name narrativa_backend_dev ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest

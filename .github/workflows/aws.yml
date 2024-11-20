@@ -38,7 +38,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
-        # Verify installation
+
       - name: Verify Docker Compose installation
         run: docker compose version
 
@@ -55,6 +55,12 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          # Pull the latest changes from the repository
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+          # Build and tag the Docker image using ECS-specific S3_FILE_KEY
           docker compose -f docker-compose.ecs.yml build \
             --build-arg AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
             --build-arg AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \

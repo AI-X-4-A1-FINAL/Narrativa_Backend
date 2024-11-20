@@ -8,21 +8,21 @@ services:
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
         AWS_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-        S3_FILE_KEY: ${S3_FILE_KEYY} # GitHub Secrets의 S3_FILE_KEYY를 매핑
-    image: narrativa_backend_dev:latest # 이미지 이름
-    container_name: narrativa_backend_dev # 컨테이너 이름
+        S3_FILE_KEY_OVERRIDE: ${S3_FILE_KEYY} # dev.yml에서 S3_FILE_KEYY 값을 전달받음
+    image: narrativa_backend_dev:latest
+    container_name: narrativa_backend_dev
     ports:
-      - "8080:8080" # 포트 매핑
+      - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: dev # 로컬(dev) 환경
-      SPRING_CONFIG_LOCATION: /app/config/application-dev.yml # S3에서 로드된 설정
+      SPRING_PROFILES_ACTIVE: dev # 로컬 프로파일 활성화
+      SPRING_CONFIG_LOCATION: /app/config/application-dev.yml
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      S3_FILE_KEY: ${S3_FILE_KEYY} # GitHub Secrets와 매핑
+      S3_FILE_KEYY: ${S3_FILE_KEYY} # 디버깅 및 내부 사용을 위해 환경 변수로 전달
     volumes:
-      - narrativa-logs:/app/logs # 로그 저장 볼륨
+      - narrativa-logs:/app/logs
     restart: unless-stopped
 
 volumes:
