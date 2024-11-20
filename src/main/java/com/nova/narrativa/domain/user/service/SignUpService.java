@@ -110,4 +110,8 @@ public class SignUpService {
     public boolean isUserExist(UserExistenceDto userExistenceDto) {
         return userRepository.existsByUserIdAndLoginType(userExistenceDto.getUserId(), userExistenceDto.getLoginType());
     }
+
+    public Optional<User> getUserId(UserExistenceDto userExistenceDto) {
+        return userRepository.findIdByUserIdAndLoginType(userExistenceDto.getUserId(), userExistenceDto.getLoginType());
+    }
 }
