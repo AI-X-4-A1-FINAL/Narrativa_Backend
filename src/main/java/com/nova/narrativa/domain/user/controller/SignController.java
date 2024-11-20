@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.Optional;
@@ -36,7 +35,7 @@ public class SignController {
         } catch (ResponseStatusException e) {
             // 409 에러 시 /home으로 리다이렉트 프론트에 요청
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
-                return new ResponseEntity<String>("/home", HttpStatus.OK);  // 리다이렉트 경로 설정
+                return ResponseEntity.status(409).body("회원 가입이 이미되어있습니다.");
             }
             // 그 외의 오류는 그대로 반환
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
