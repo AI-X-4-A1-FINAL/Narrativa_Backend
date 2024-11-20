@@ -1,0 +1,24 @@
+services:
+  narrativa-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+        AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+        AWS_REGION: ${AWS_REGION}
+        S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+        S3_FILE_KEY: ${S3_FILE_KEY}
+    image: narrativa-backend:latest
+    container_name: narrativa-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_CONFIG_LOCATION: /app/config/application.yml
+    volumes:
+      - narrativa-logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  narrativa-logs:
