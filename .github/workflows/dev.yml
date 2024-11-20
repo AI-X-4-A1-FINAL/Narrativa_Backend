@@ -98,7 +98,7 @@ jobs:
           git pull origin dev
 
   
-          docker-compose build narrativa_backend_dev .
+          docker-compose build narrativa_backend_dev
           docker tag narrativa-backend:latest ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
 
