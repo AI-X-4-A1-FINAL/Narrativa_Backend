@@ -22,12 +22,10 @@ jobs:
           token: ${{ secrets.MY_GITHUB_TOKEN }}
           submodules: true
 
-
       - name: Configure Git
         run: |
           git config --global user.email "ppuding3861@gmail.com"
           git config --global user.name "ppudding3861"
-
 
       - name: Check for new commits in feat/* branches
         id: check_commits
@@ -39,7 +37,6 @@ jobs:
           else
             echo "has_new_commits=true" >> $GITHUB_ENV
           fi
-
 
       - name: Create or Find PRs from feat/* branches to dev
         if: env.has_new_commits == 'true'
@@ -54,7 +51,6 @@ jobs:
             fi
           done
 
-
       - name: Auto-merge pull requests
         if: env.has_new_commits == 'true'
         env:
@@ -68,13 +64,11 @@ jobs:
             fi
           done
 
-
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
-
 
       - name: Log in to Docker Hub
         if: env.has_new_commits == 'true'
@@ -96,8 +90,7 @@ jobs:
           git fetch origin dev
           git checkout dev
           git pull origin dev
-          
-          
+
           docker compose -f docker-compose.local.yml build narrativa_backend_dev
           docker tag narrativa_backend_dev:latest ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
@@ -120,7 +113,6 @@ jobs:
           docker stop narrativa_backend_dev 2>NUL || echo "Container not running or already stopped"
           docker rm narrativa_backend_dev 2>NUL || echo "Container not found or already removed"
           docker rmi ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest 2>NUL || echo "Image not found or already removed"
-      
 
       - name: Pull Docker image from Docker Hub and run container
         shell: cmd
@@ -129,14 +121,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_FILE_KEY: ${{ secrets.S3_FILE_KEYY }}
+          S3_FILE_KEYY: ${{ secrets.S3_FILE_KEYY }}
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
           docker run -d -p 8080:8080 --name narrativa_backend_dev ${{ secrets.DOCKER_USERNAME }}/narrativa_backend_dev:latest
-  
-  
-  
-  
-  
-  
-  

@@ -1,5 +1,5 @@
 services:
-  narrativa-backend:
+  narrativa_backend_dev: # 서비스 이름을 정확히 지정
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,10 +9,10 @@ services:
         AWS_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
         S3_FILE_KEYY: ${S3_FILE_KEYY}
-    image: narrativa_backend_dev:latest
-    container_name: narrativa_backend_dev
+    image: narrativa_backend_dev:latest # 이미지 이름을 서비스 이름과 일치
+    container_name: narrativa_backend_dev # 컨테이너 이름 지정
     ports:
-      - "8080:8080"
+      - "8080:8080" # 로컬 포트와 컨테이너 포트 매핑
     environment:
       SPRING_PROFILES_ACTIVE: production
       SPRING_CONFIG_LOCATION: /app/config/application.yml
