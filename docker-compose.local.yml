@@ -1,5 +1,5 @@
 services:
-  narrativa_backend_dev: # 서비스 이름 지정
+  narrativa_backend_dev:
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,16 +8,21 @@ services:
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
         AWS_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-        S3_FILE_KEYY: ${S3_FILE_KEYY} # 올바르게 명시된 환경 변수
-    image: narrativa_backend_dev:latest # 이미지 이름과 서비스 이름 통일
-    container_name: narrativa_backend_dev # 컨테이너 이름 지정
+        S3_FILE_KEY: ${S3_FILE_KEYY} # GitHub Secrets의 S3_FILE_KEYY를 매핑
+    image: narrativa_backend_dev:latest # 이미지 이름
+    container_name: narrativa_backend_dev # 컨테이너 이름
     ports:
       - "8080:8080" # 포트 매핑
     environment:
-      SPRING_PROFILES_ACTIVE: dev # 프로파일을 로컬(dev)로 설정
-      SPRING_CONFIG_LOCATION: /app/config/application-dev.yml # dev용 설정 파일 위치
+      SPRING_PROFILES_ACTIVE: dev # 로컬(dev) 환경
+      SPRING_CONFIG_LOCATION: /app/config/application-dev.yml # S3에서 로드된 설정
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_FILE_KEY: ${S3_FILE_KEYY} # GitHub Secrets와 매핑
     volumes:
-      - narrativa-logs:/app/logs # 로그를 호스트와 공유
+      - narrativa-logs:/app/logs # 로그 저장 볼륨
     restart: unless-stopped
 
 volumes:
