@@ -111,4 +111,8 @@ public class SignUpService {
     public Optional<User> getUserId(UserExistenceDto userExistenceDto) {
         return userRepository.findIdByUserIdAndLoginType(userExistenceDto.getUserId(), userExistenceDto.getLoginType());
     }
+
+    public Optional<User> getUserProfileInfo(Long userId) {
+        return userRepository.findById(userId);
+    }
 }
