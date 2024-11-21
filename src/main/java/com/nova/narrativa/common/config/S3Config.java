@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -18,8 +19,7 @@ public class S3Config {
 
     @Bean
     public S3Client s3Client() {
-        AwsCredentialsProvider credentialsProvider =
-                isLocalEnvironment() ? ProfileCredentialsProvider.create() : EnvironmentVariableCredentialsProvider.create();
+        AwsCredentialsProvider credentialsProvider = getCredentialsProvider();
 
         return S3Client.builder()
                 .region(Region.of(region))
@@ -29,10 +29,30 @@ public class S3Config {
 
     @Bean
     public S3Presigner s3Presigner() {
-        return S3Presigner.create();
+        AwsCredentialsProvider credentialsProvider = getCredentialsProvider();
+
+        return S3Presigner.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    private AwsCredentialsProvider getCredentialsProvider() {
+        if (isLocalEnvironment()) {
+            System.out.println("Using ProfileCredentialsProvider for local environment.");
+            return ProfileCredentialsProvider.create("default");
+        } else {
+            System.out.println("Using EnvironmentVariableCredentialsProvider for deployment environment.");
+            return EnvironmentVariableCredentialsProvider.create();
+        }
     }
 
     private boolean isLocalEnvironment() {
-        return System.getenv("ENV") == null || System.getenv("ENV").equalsIgnoreCase("LOCAL");
+        String env = System.getenv("ENV");
+        if (env == null) {
+            System.out.println("ENV variable is not set. Defaulting to DEPLOYMENT environment.");
+            return false; // Default to deployment
+        }
+        return env.equalsIgnoreCase("LOCAL");
     }
 }
