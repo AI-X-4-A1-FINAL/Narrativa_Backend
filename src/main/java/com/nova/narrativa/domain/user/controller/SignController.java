@@ -66,7 +66,7 @@ public class SignController {
         Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
         if (userInfo.isPresent()) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
-                    .username(userInfo.get().getUsername())
+                    .nickname(userInfo.get().getUsername())
                     .profile_url(userInfo.get().getProfile_url())
                     .build();
             return new ResponseEntity<>(userProfileInfo, HttpStatus.OK);
@@ -77,9 +77,9 @@ public class SignController {
 
     // 회원정보 업데이트
     @PutMapping("/users/{userId}")
-    public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody User UpdateUser) {
-        log.info("Update user: {}", UpdateUser);
+    public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody UserProfileInfo userProfileInfo) {
+        log.info("userProfileInfo: {}", userProfileInfo);
 
-        return signUpService.updateUser(userId, UpdateUser);
+        return signUpService.updateUser(userId, userProfileInfo);
     }
 }

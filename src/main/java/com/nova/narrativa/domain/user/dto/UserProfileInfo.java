@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 public class UserProfileInfo {
 
-    private String username;
+    private String nickname;
     private String profile_url;
 }

@@ -2,6 +2,7 @@ package com.nova.narrativa.domain.user.service;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
 import com.nova.narrativa.domain.user.dto.UserExistenceDto;
+import com.nova.narrativa.domain.user.dto.UserProfileInfo;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +84,7 @@ public class SignUpService {
         }
     }
 
-    public ResponseEntity<Object> updateUser(Long userId, User updateUser) {
+    public ResponseEntity<Object> updateUser(Long userId, UserProfileInfo updateUser) {
         // 기존 사용자 조회
         Optional<User> existingUserOptional = userRepository.findById(userId);
         if (existingUserOptional.isEmpty()) {
@@ -91,10 +92,11 @@ public class SignUpService {
         }
 
         User existingUser = existingUserOptional.get();
+        log.info("existingUser: {}", existingUser);
 
         // 변경된 필드만 업데이트
-        if (updateUser.getUsername() != null && !updateUser.getUsername().equals(existingUser.getUsername())) {
-            existingUser.setUsername(updateUser.getUsername());
+        if (updateUser.getNickname() != null && !updateUser.getNickname().equals(existingUser.getUsername())) {
+            existingUser.setUsername(updateUser.getNickname());
         }
         if (updateUser.getProfile_url() != null && !updateUser.getProfile_url().equals(existingUser.getProfile_url())) {
             existingUser.setProfile_url(updateUser.getProfile_url());

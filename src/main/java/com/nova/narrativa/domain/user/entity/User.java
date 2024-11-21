@@ -38,7 +38,7 @@ public class User {
     @Column(nullable = false, length = 50)
     private String username;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "longtext")
     private String profile_url;     // null 이면 front에서 기본 이미지 띄우고, 있으면 해당 url 띄우기
 
     @Enumerated(EnumType.STRING)
