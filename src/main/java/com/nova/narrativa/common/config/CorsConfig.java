@@ -14,10 +14,13 @@ public class CorsConfig implements WebMvcConfigurer {
     @Value("${server.url}")
     private String serverUrl;
 
+    @Value("${local.url}")
+    private String localUrl;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(frontUrl, serverUrl) // 허용할 Origin 설정
+                .allowedOrigins(frontUrl, serverUrl, localUrl) // 허용할 Origin 설정
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .allowedMethods("GET", "POST", "PUT", "DELETE")
