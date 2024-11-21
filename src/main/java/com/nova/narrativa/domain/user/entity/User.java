@@ -39,9 +39,6 @@ public class User {
     private String username;
 
     @Column(length = 255)
-    private String profile;
-
-    @Column(length = 255)
     private String profile_url;     // null 이면 front에서 기본 이미지 띄우고, 있으면 해당 url 띄우기
 
     @Enumerated(EnumType.STRING)

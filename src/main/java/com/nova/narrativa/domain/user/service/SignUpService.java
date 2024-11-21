@@ -96,9 +96,6 @@ public class SignUpService {
         if (updateUser.getUsername() != null && !updateUser.getUsername().equals(existingUser.getUsername())) {
             existingUser.setUsername(updateUser.getUsername());
         }
-        if (updateUser.getProfile() != null && !updateUser.getProfile().equals(existingUser.getProfile())) {
-            existingUser.setProfile(updateUser.getProfile());
-        }
         if (updateUser.getProfile_url() != null && !updateUser.getProfile_url().equals(existingUser.getProfile_url())) {
             existingUser.setProfile_url(updateUser.getProfile_url());
         }
