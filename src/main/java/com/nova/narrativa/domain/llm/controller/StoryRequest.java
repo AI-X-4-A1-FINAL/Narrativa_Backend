@@ -6,7 +6,7 @@ public class StoryRequest {
     private int cut;
     private String userInput;
 
-    // Getter와 Setter
+    // Getters and Setters
     public String getGenre() {
         return genre;
     }
@@ -37,5 +37,15 @@ public class StoryRequest {
 
     public void setUserInput(String userInput) {
         this.userInput = userInput;
+    }
+
+    @Override
+    public String toString() {
+        return "StoryRequest{" +
+                "genre='" + genre + '\'' +
+                ", affection=" + affection +
+                ", cut=" + cut +
+                ", userInput='" + userInput + '\'' +
+                '}';
     }
 }
