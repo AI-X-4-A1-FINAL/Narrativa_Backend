@@ -64,7 +64,8 @@ public class SignController {
         log.info("userId: {}", userId);
 
         Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
-        if (userInfo.isPresent()) {
+        // 회원 정보가 존재 and 회원 타입이 ACTIVE 인 경우만 조회처리
+        if (userInfo.isPresent() && userInfo.get().getStatus() == User.Status.ACTIVE) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
                     .nickname(userInfo.get().getUsername())
                     .profile_url(userInfo.get().getProfile_url())
