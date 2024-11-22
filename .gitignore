@@ -227,6 +227,11 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
+# env 및 config 파일
+.env
+src/main/java/com/nova/narrativa/common/config/S3Config.java
+S3Config.java
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij,java,gradle
 
 application.yml
