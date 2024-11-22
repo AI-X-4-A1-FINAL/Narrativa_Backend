@@ -95,7 +95,7 @@ public class SocialLoginController {
     }
 
     @GetMapping("/google")
-    public ModelAndView googleLogin(@RequestParam String code) {
+    public ModelAndView googleLogin(@RequestParam String code, HttpServletResponse response) {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = "";
@@ -108,9 +108,21 @@ public class SocialLoginController {
                     .build();
             log.info("userExistenceDto = {}", userExistenceDto);
 
-            // DB 조회 후, 해당 유저 존재시 /home으로 redirect
+            // DB 조회 후, 해당 유저 존재x -> /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
                 redirectWithParams = frontUrl + "/home";
+
+                Long id = signUpService.getUserId(userExistenceDto).map(User::getId)
+                        .orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                log.info("id = {}", id);
+
+
+                // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
+//                String idCookie = String.format("id=%d; SameSite=None; Secure; HttpOnly; Path=/", id);
+                String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", id);
+
+                log.info("idCookie: {}", idCookie);
+                response.setHeader("Set-Cookie", idCookie);
             } else {
                 redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
                         + "&profile_url=" + socialLoginResult.getProfile_image_url()
@@ -127,7 +139,7 @@ public class SocialLoginController {
     }
 
     @GetMapping("/github")
-    public ModelAndView githubLogin(@RequestParam String code) {
+    public ModelAndView githubLogin(@RequestParam String code, HttpServletResponse response) {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = "";
@@ -143,6 +155,18 @@ public class SocialLoginController {
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
                 redirectWithParams = frontUrl + "/home";
+
+                Long id = signUpService.getUserId(userExistenceDto).map(User::getId)
+                        .orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                log.info("id = {}", id);
+
+
+                // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
+//                String idCookie = String.format("id=%d; SameSite=None; Secure; HttpOnly; Path=/", id);
+                String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", id);
+
+                log.info("idCookie: {}", idCookie);
+                response.setHeader("Set-Cookie", idCookie);
             } else {
                 redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
                         + "&profile_url=" + socialLoginResult.getProfile_image_url()
