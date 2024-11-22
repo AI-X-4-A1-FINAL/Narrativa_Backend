@@ -2,6 +2,7 @@ package com.nova.narrativa.domain.user.controller;
 
 import com.nova.narrativa.domain.user.dto.SignUp;
 import com.nova.narrativa.domain.user.dto.SocialLoginResult;
+import com.nova.narrativa.domain.user.dto.UserProfileInfo;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.SignUpService;
 import jakarta.servlet.http.HttpSession;
@@ -57,23 +58,29 @@ public class SignController {
         }
     }
 
-    // 회원정보 업데이트
-    @PutMapping("/users/{userId}")
-    public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody User UpdateUser) {
-        log.info("Update user: {}", UpdateUser);
+    // 회원 정보 조회
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<UserProfileInfo> getUser(@PathVariable Long userId) {
+        log.info("userId: {}", userId);
 
-        return signUpService.updateUser(userId, UpdateUser);
+        Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
+        // 회원 정보가 존재 and 회원 타입이 ACTIVE 인 경우만 조회처리
+        if (userInfo.isPresent() && userInfo.get().getStatus() == User.Status.ACTIVE) {
+            UserProfileInfo userProfileInfo = UserProfileInfo.builder()
+                    .nickname(userInfo.get().getUsername())
+                    .profile_url(userInfo.get().getProfile_url())
+                    .build();
+            return new ResponseEntity<>(userProfileInfo, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
-    // 소셜 로그인 여부 확인
-    @GetMapping("/get-social-login-result")
-    public ResponseEntity<SocialLoginResult> getSocialLoginResult(HttpSession session) {
-        SocialLoginResult result = (SocialLoginResult) session.getAttribute("SocialLoginResult");
+    // 회원정보 업데이트
+    @PutMapping("/users/{userId}")
+    public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody UserProfileInfo userProfileInfo) {
+        log.info("userProfileInfo: {}", userProfileInfo);
 
-        if (result != null) {
-            return ResponseEntity.ok(result);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
+        return signUpService.updateUser(userId, userProfileInfo);
     }
 }
