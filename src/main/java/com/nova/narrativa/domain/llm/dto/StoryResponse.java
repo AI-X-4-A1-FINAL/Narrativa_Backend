@@ -1,4 +1,4 @@
-package com.nova.narrativa.domain.llm.controller;
+package com.nova.narrativa.domain.llm.dto;
 
 public class StoryResponse {
     private String story;
