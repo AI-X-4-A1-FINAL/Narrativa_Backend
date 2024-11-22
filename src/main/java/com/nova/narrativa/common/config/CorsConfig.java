@@ -17,7 +17,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Value("${local.url}")
     private String localUrl;
 
-    @Value("${ml.url}")
+     @Value("${ml.url}")
     private String mlUrl;
 
     @Override
