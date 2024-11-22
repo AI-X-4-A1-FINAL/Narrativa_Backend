@@ -233,4 +233,4 @@ S3Config.java
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij,java,gradle
 
 application.yml
-
+.env

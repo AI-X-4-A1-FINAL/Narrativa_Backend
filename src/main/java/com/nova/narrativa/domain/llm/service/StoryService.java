@@ -1,7 +1,7 @@
 package com.nova.narrativa.domain.llm.service;
 
-import com.nova.narrativa.domain.llm.controller.StoryRequest;
+import java.util.List;
 
 public interface StoryService {
-    String generateStory(StoryRequest request);
+    String startGame(String genre, List<String> tags);
 }
