@@ -14,5 +14,4 @@ public class ChatRequest {
     private String userInput;
     private String initialStory;
 
-
 }

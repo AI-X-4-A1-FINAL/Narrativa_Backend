@@ -1,28 +1,16 @@
 package com.nova.narrativa.domain.llm.service;
 
-import com.nova.narrativa.domain.llm.dto.ChatRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.io.IOException;
 
 @Service
 public class StoryServiceImpl implements StoryService {
@@ -63,10 +51,16 @@ public class StoryServiceImpl implements StoryService {
         requestPayload.put("initialStory", initialStory);
         requestPayload.put("userInput", userInput);
 
+        logger.info("FastAPI 요청 데이터: {}", requestPayload);
+
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(fastApiUrl + "/api/story/chat", requestPayload, String.class);
+
+            logger.info("FastAPI URL: {}", fastApiUrl + "/api/story/start");
+
             return response.getBody();
         } catch (Exception e) {
+            logger.error("FastAPI 요청 실패", e);
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
         }
     }

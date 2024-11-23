@@ -26,7 +26,7 @@ public class ImageService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${aws.s3.images-storage-buckets}")
+//    @Value("${aws.s3.images-storage-buckets}")
     private String bucketName;
 
     @PreDestroy
