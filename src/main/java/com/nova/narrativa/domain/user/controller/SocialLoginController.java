@@ -1,22 +1,19 @@
 package com.nova.narrativa.domain.user.controller;
 
+import com.nova.narrativa.domain.user.dto.SignUp;
 import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import com.nova.narrativa.domain.user.dto.UserExistenceDto;
 import com.nova.narrativa.domain.user.entity.User;
-import com.nova.narrativa.domain.user.service.GithubService;
-import com.nova.narrativa.domain.user.service.GoogleService;
-import com.nova.narrativa.domain.user.service.KakaoService;
-import com.nova.narrativa.domain.user.service.SignUpService;
-import jakarta.servlet.http.Cookie;
+import com.nova.narrativa.domain.user.service.*;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
 
-import java.net.URLEncoder;
+import java.io.IOException;
+import java.util.Optional;
 
 @RequestMapping("/login")
 @Slf4j
@@ -48,104 +45,136 @@ public class SocialLoginController {
         this.redirectUrl = frontUrl + frontSignupPart;
     }
 
-    // TODO: 로그인 중복 코드 정리
-
     @GetMapping("/kakao")
-    public ModelAndView kakaoLogin(@RequestParam String code, HttpServletResponse response) {
+    public void kakaoLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
-        String redirectWithParams = "";
-
+        String redirectWithParams = frontUrl + "/home";
+        Long dbId;
         try {
-            socialLoginResult = kakaoService.kakaoLogin(code);
+            socialLoginResult = kakaoService.login(code);
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
                     .userId(socialLoginResult.getId())
                     .loginType(User.LoginType.KAKAO)
                     .build();
-            log.info("userExistenceDto = {}", userExistenceDto);
+            log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
-                redirectWithParams = frontUrl + "/home";
+                Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
-                Long id = signUpService.getUserId(userExistenceDto).map(User::getId)
-                        .orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                log.info("id = {}", id);
+                User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                dbId = user.getId();
 
+                // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
+                if (user.getStatus() == User.Status.INACTIVE) {
+                    user.setStatus(User.Status.ACTIVE);
+                    signUpService.saveUser(user);
+                    log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
+                }
 
-                // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-//                String idCookie = String.format("id=%d; SameSite=None; Secure; HttpOnly; Path=/", id);
-                String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", id);
-
-                log.info("idCookie: {}", idCookie);
-                response.setHeader("Set-Cookie", idCookie);
-
+                // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                        + "&profile_url=" + socialLoginResult.getProfile_image_url()
-                        + "&id=" + socialLoginResult.getId()
-                        + "&type=" + User.LoginType.KAKAO;
-            }
+                SignUp signUp = SignUp.builder()
+                        .username(socialLoginResult.getNickname())
+                        .profile_url(socialLoginResult.getProfile_image_url())
+                        .user_id(socialLoginResult.getId())
+                        .login_type(User.LoginType.KAKAO.name())
+                        .build();
 
+                // 회원가입
+                signUpService.register(signUp);
+
+                Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
+
+                User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                dbId = user.getId();
+            }
+            log.info("dbId = {}", dbId);
+
+            // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
+            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+
+            log.info("idCookie: {}", idCookie);
+            response.setHeader("Set-Cookie", idCookie);
+
+            response.setStatus(HttpServletResponse.SC_CREATED);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
-        log.info("redirectWithParams = {}", redirectWithParams);
-        return new ModelAndView("redirect:" + redirectWithParams);
+        log.info("redirectWithParams: {}", redirectWithParams);
+        response.sendRedirect(redirectWithParams);
     }
 
     @GetMapping("/google")
-    public ModelAndView googleLogin(@RequestParam String code, HttpServletResponse response) {
+    public void googleLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
-        String redirectWithParams = "";
+        String redirectWithParams = frontUrl + "/home";
+        Long dbId;
         try {
-            socialLoginResult = googleService.googleLogin(code);
-            log.info("socialLoginResult = {}", socialLoginResult);
+            socialLoginResult = googleService.login(code);
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
                     .userId(socialLoginResult.getId())
                     .loginType(User.LoginType.GOOGLE)
                     .build();
-            log.info("userExistenceDto = {}", userExistenceDto);
+            log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
 
-            // DB 조회 후, 해당 유저 존재x -> /home으로 redirect
+            // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
-                redirectWithParams = frontUrl + "/home";
+                Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
-                Long id = signUpService.getUserId(userExistenceDto).map(User::getId)
-                        .orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                log.info("id = {}", id);
+                User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                dbId = user.getId();
 
+                // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
+                if (user.getStatus() == User.Status.INACTIVE) {
+                    user.setStatus(User.Status.ACTIVE);
+                    signUpService.saveUser(user);
+                    log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
+                }
 
-                // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-//                String idCookie = String.format("id=%d; SameSite=None; Secure; HttpOnly; Path=/", id);
-                String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", id);
-
-                log.info("idCookie: {}", idCookie);
-                response.setHeader("Set-Cookie", idCookie);
+                // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                        + "&profile_url=" + socialLoginResult.getProfile_image_url()
-                        + "&id=" + socialLoginResult.getId()
-                        + "&type=" + User.LoginType.GOOGLE;
+                SignUp signUp = SignUp.builder()
+                        .username(socialLoginResult.getNickname())
+                        .profile_url(socialLoginResult.getProfile_image_url())
+                        .user_id(socialLoginResult.getId())
+                        .login_type(User.LoginType.GOOGLE.name())
+                        .build();
+
+                // 회원가입
+                signUpService.register(signUp);
+
+                Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
+
+                User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                dbId = user.getId();
             }
+            log.info("dbId = {}", dbId);
 
+            // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
+            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+
+            log.info("idCookie: {}", idCookie);
+            response.setHeader("Set-Cookie", idCookie);
+
+            response.setStatus(HttpServletResponse.SC_CREATED);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
-
-        log.info("redirectWithParams = {}", redirectWithParams);
-        return new ModelAndView("redirect:" + redirectWithParams);
+        log.info("redirectWithParams: {}", redirectWithParams);
+        response.sendRedirect(redirectWithParams);
     }
 
     @GetMapping("/github")
-    public ModelAndView githubLogin(@RequestParam String code, HttpServletResponse response) {
+    public void githubLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
-        String redirectWithParams = "";
-
+        String redirectWithParams = frontUrl + "/home";
+        Long dbId;
         try {
-            socialLoginResult = githubService.githubLogin(code);
+            socialLoginResult = githubService.login(code);
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
                     .userId(socialLoginResult.getId())
                     .loginType(User.LoginType.GITHUB)
@@ -154,32 +183,49 @@ public class SocialLoginController {
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
-                redirectWithParams = frontUrl + "/home";
+                Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
-                Long id = signUpService.getUserId(userExistenceDto).map(User::getId)
-                        .orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                log.info("id = {}", id);
+                User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                dbId = user.getId();
 
+                // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
+                if (user.getStatus() == User.Status.INACTIVE) {
+                    user.setStatus(User.Status.ACTIVE);
+                    signUpService.saveUser(user);
+                    log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
+                }
 
-                // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-//                String idCookie = String.format("id=%d; SameSite=None; Secure; HttpOnly; Path=/", id);
-                String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", id);
-
-                log.info("idCookie: {}", idCookie);
-                response.setHeader("Set-Cookie", idCookie);
+                // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                redirectWithParams = redirectUrl + "?username=" + URLEncoder.encode(socialLoginResult.getNickname(), "UTF-8")
-                        + "&profile_url=" + socialLoginResult.getProfile_image_url()
-                        + "&id=" + socialLoginResult.getId()
-                        + "&type=" + User.LoginType.GITHUB;
+                SignUp signUp = SignUp.builder()
+                        .username(socialLoginResult.getNickname())
+                        .profile_url(socialLoginResult.getProfile_image_url())
+                        .user_id(socialLoginResult.getId())
+                        .login_type(User.LoginType.GITHUB.name())
+                        .build();
+
+                // 회원가입
+                signUpService.register(signUp);
+
+                Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
+
+                User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
+                dbId = user.getId();
             }
+            log.info("dbId = {}", dbId);
 
+            // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
+            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+
+            log.info("idCookie: {}", idCookie);
+            response.setHeader("Set-Cookie", idCookie);
+
+            response.setStatus(HttpServletResponse.SC_CREATED);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
-
-        log.info("redirectWithParams = {}", redirectWithParams);
-        return new ModelAndView("redirect:" + redirectWithParams);
+        log.info("redirectWithParams: {}", redirectWithParams);
+        response.sendRedirect(redirectWithParams);
     }
 
     // 로그인 상태 확인
@@ -193,7 +239,6 @@ public class SocialLoginController {
         }
     }
 
-
     // 로그아웃 처리
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpSession session) {
@@ -201,6 +246,4 @@ public class SocialLoginController {
         session.invalidate();  // 세션 무효화
         return ResponseEntity.ok().body("로그아웃 성공");
     }
-
-
 }

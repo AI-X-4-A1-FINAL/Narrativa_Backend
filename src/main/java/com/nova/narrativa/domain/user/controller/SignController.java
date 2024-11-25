@@ -58,17 +58,35 @@ public class SignController {
         }
     }
 
-    // 회원 정보 조회
+    // 회원 정보 전체 조회
     @GetMapping("/users/{userId}")
     public ResponseEntity<UserProfileInfo> getUser(@PathVariable Long userId) {
         log.info("userId: {}", userId);
 
         Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
-        // 회원 정보가 존재 and 회원 타입이 ACTIVE 인 경우만 조회처리
-        if (userInfo.isPresent() && userInfo.get().getStatus() == User.Status.ACTIVE) {
+        // 회원 정보가 존재 (회원 타입 상태 상관없이 조회처리)
+        if (userInfo.isPresent()) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
                     .nickname(userInfo.get().getUsername())
                     .profile_url(userInfo.get().getProfile_url())
+                    .status(String.valueOf(userInfo.get().getStatus()))
+                    .build();
+            return new ResponseEntity<>(userProfileInfo, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    // 회원 정보 상태 조회
+    @GetMapping("/users/{userId}/status")
+    public ResponseEntity<UserProfileInfo> getUserStatus(@PathVariable Long userId) {
+        log.info("userId: {}", userId);
+
+        Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
+        // 회원 정보가 존재 (회원 타입 상태 상관없이 조회처리)
+        if (userInfo.isPresent()) {
+            UserProfileInfo userProfileInfo = UserProfileInfo.builder()
+                    .status(String.valueOf(userInfo.get().getStatus()))
                     .build();
             return new ResponseEntity<>(userProfileInfo, HttpStatus.OK);
         } else {
