@@ -1,10 +1,15 @@
 package com.nova.narrativa.common.config;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -14,7 +19,11 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @Configuration
 public class S3Config {
 
-    @Value("${aws.s3.region}")
+    private static final Dotenv dotenv = Dotenv.configure()
+            .directory("./src/main/resources") // .env 파일 위치
+            .load();
+
+    @Value("${aws.s3.region:ap-northeast-2}")
     private String region;
 
     @Bean
@@ -24,6 +33,15 @@ public class S3Config {
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    @Bean
+    public AmazonS3 s3ImgClient() {
+        AWSCredentials credentials = new BasicAWSCredentials(dotenv.get("AWS_ACCESS_KEY_ID"), dotenv.get("AWS_SECRET_ACCESS_KEY"));
+        return AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withRegion(dotenv.get("AWS_REGION"))
                 .build();
     }
 
@@ -48,11 +66,8 @@ public class S3Config {
     }
 
     private boolean isLocalEnvironment() {
-        String env = System.getenv("ENV");
-        if (env == null) {
-            System.out.println("ENV variable is not set. Defaulting to DEPLOYMENT environment.");
-            return false; // Default to deployment
-        }
+        String env = dotenv.get("ENV", "DEPLOYMENT"); // 기본값 DEPLOYMENT
+        System.out.println("Detected ENV variable: " + env); // 디버깅 메시지 추가
         return env.equalsIgnoreCase("LOCAL");
     }
 }
