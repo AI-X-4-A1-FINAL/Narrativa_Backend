@@ -11,7 +11,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -21,32 +29,52 @@ import java.util.Map;
 @Service
 public class StoryServiceImpl implements StoryService {
 
+    private final S3Client s3Client;
     private final RestTemplate restTemplate;
     private static final Logger logger = LoggerFactory.getLogger(StoryServiceImpl.class);
 
     @Value("${ml.url}")
     private String fastApiUrl;
 
-    @Value("${prompt.file.path}")
-    private String promptFilePath;
+    @Value("${aws2.s3.bucket-name}")
+    private String bucketName;
 
-    private Map<Integer, Integer> userInputCountMap = new HashMap<>(); // 스테이지마다 유저 입력 횟수 카운트
-    private Map<Integer, Double> survivalProbabilityMap = new HashMap<>(); // 스테이지마다 생존 확률 관리
+    @Value("${aws2.s3.region}")
+    private String region;
+
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
 
     @Autowired
-    public StoryServiceImpl(RestTemplate restTemplate) {
+    public StoryServiceImpl(RestTemplate restTemplate, S3Client s3Client) {
         this.restTemplate = restTemplate;
+        this.s3Client = s3Client;
     }
 
     // genre에 맞는 프롬프트 파일 불러오기
     private String readPromptFromFileByGenre(String genre, List<String> tags) {
         String fileName = genre + ".txt"; // 예: "Survival.txt" 또는 "Romance.txt"
-        String filePath = promptFilePath + "/" + fileName;
+        String fileKey = genre + "/" + fileName; // 예: "Survival/Survival.txt"
 
         try {
-            return Files.readString(Paths.get(filePath)); // 텍스트 파일 읽기
-        } catch (Exception e) {
+            // S3에서 파일 읽기
+            InputStream inputStream = s3Client.getObject(
+                    GetObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(fileKey)
+                            .build(),
+                    ResponseTransformer.toInputStream()
+            );
+
+            // InputStream을 BufferedReader로 감싸서 읽기
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            StringBuilder fileContent = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                fileContent.append(line).append("\n");
+            }
+            return fileContent.toString();
+        } catch (SdkException | IOException e) {
+            logger.error("S3에서 파일 읽기 실패: ", e);
             throw new RuntimeException("프롬프트 파일 읽기 실패: " + e.getMessage());
         }
     }
