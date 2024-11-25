@@ -32,11 +32,19 @@ public class StoryController {
     @PostMapping("/chat")
     public ResponseEntity<String> continueStory(@RequestBody ChatRequest request) {
         try {
-            String storyResponse = storyService.continueStory(request.getInitialStory(), request.getUserInput(),request.getCurrentStage(), request.getGenre());
+            String storyResponse = storyService.continueStory(
+                    request.getCurrentStage(),  // int 타입
+                    request.getGenre(),        // String 타입
+                    request.getInitialStory(),
+                    request.getPreviousUserInput(),
+                    request.getUserInput()
+//              request.getSurvivalProbability() // 생존 확률 추가
+            );
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
     }
+
 
 }

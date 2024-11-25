@@ -4,6 +4,14 @@ import java.util.List;
 
 public interface StoryService {
     String startGame(String genre, List<String> tags);
-    String continueStory(String previousStory, String userInput, int currentStage, String genre);
+    String continueStory(
+            int currentStage,
+            String genre,
+            String initialStory,
+            String previousStory,
+            String userInput
+//            double survivalProbability // 생존 확률 추가
+    );
 }
+
 
