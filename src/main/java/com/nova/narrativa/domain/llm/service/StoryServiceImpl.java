@@ -54,12 +54,6 @@ public class StoryServiceImpl implements StoryService {
     @Override
     public String startGame(String genre, List<String> tags) {
 
-        // 생존 확률 초기화 (최초 20~100% 랜덤으로 설정)
-        //        if (!survivalProbabilityMap.containsKey(currentStage)) {
-        //            double initialSurvivalProbability = Math.random() * 80 + 20; // 20~100% 사이의 랜덤 값
-        //            survivalProbabilityMap.put(currentStage, initialSurvivalProbability);
-        //        }
-
         // FastAPI로 전달할 데이터 생성
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
