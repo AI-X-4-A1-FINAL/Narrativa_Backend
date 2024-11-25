@@ -33,12 +33,12 @@ public class StoryController {
     public ResponseEntity<String> continueStory(@RequestBody ChatRequest request) {
         try {
             String storyResponse = storyService.continueStory(
-                    request.getCurrentStage(),  // int 타입
-                    request.getGenre(),        // String 타입
+            // 순서 바뀌면 안됩니다. 전달될 때 값이 잘못들어가서 답도 이상하게 나와요.
+                    request.getCurrentStage(),
+                    request.getGenre(),
                     request.getInitialStory(),
                     request.getPreviousUserInput(),
                     request.getUserInput()
-//              request.getSurvivalProbability() // 생존 확률 추가
             );
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {

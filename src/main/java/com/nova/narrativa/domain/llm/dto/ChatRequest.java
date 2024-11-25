@@ -14,7 +14,6 @@ public class ChatRequest {
     private String initialStory;
     private String previousUserInput; // 이전 대화 내용
     private String userInput;
-//    private double survivalProbability; // 생존 확률 추가
 
 }
 
