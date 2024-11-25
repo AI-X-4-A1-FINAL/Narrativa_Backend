@@ -116,4 +116,5 @@ public class ImageService {
             throw new RuntimeException("FastAPI 이미지 생성 요청 중 오류 발생: " + e.getMessage());
         }
     }
+
 }
