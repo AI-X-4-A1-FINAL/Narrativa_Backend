@@ -8,5 +8,6 @@ import lombok.Data;
 public class UserProfileInfo {
 
     private String nickname;
+    private String status;
     private String profile_url;
 }
