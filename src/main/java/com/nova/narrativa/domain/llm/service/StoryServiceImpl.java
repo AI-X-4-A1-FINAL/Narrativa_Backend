@@ -15,6 +15,8 @@ import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,9 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class StoryServiceImpl implements StoryService {
@@ -50,22 +50,40 @@ public class StoryServiceImpl implements StoryService {
         this.s3Client = s3Client;
     }
 
-    // genre에 맞는 프롬프트 파일 불러오기
-    private String readPromptFromFileByGenre(String genre, List<String> tags) {
-        String fileName = genre + ".txt"; // 예: "Survival.txt" 또는 "Romance.txt"
-        String fileKey = genre + "/" + fileName; // 예: "Survival/Survival.txt"
+    // genre에 맞는 프롬프트 파일 불러오기 (랜덤 파일)
+    private String readRandomPromptFromFileByGenre(String genre, List<String> tags) {
+        String folderKey = genre + "/"; // 예: "Survival/" 또는 "Romance/"
 
         try {
-            // S3에서 파일 읽기
+            // S3에서 파일 목록을 가져오기
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(folderKey)  // 해당 genre 폴더 안의 파일들만 가져옴
+                    .build();
+
+            ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
+            List<String> fileKeys = new ArrayList<>();
+
+            // 파일 목록을 수집
+            listResponse.contents().forEach(s3Object -> fileKeys.add(s3Object.key()));
+
+            if (fileKeys.isEmpty()) {
+                throw new RuntimeException("해당 폴더에 파일이 없습니다.");
+            }
+
+            // 파일 목록에서 랜덤으로 파일 선택
+            Random random = new Random();
+            String randomFileKey = fileKeys.get(random.nextInt(fileKeys.size())); // 랜덤 파일 선택
+
+            // 선택된 파일 읽기
             InputStream inputStream = s3Client.getObject(
                     GetObjectRequest.builder()
                             .bucket(bucketName)
-                            .key(fileKey)
+                            .key(randomFileKey)
                             .build(),
                     ResponseTransformer.toInputStream()
             );
 
-            // InputStream을 BufferedReader로 감싸서 읽기
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder fileContent = new StringBuilder();
             String line;
@@ -88,7 +106,7 @@ public class StoryServiceImpl implements StoryService {
         requestPayload.put("tags", tags);
         //        requestPayload.put("survivalProbability", survivalProbabilityMap.get(currentStage)); // 생존 확률 추가
 
-        String prompt = readPromptFromFileByGenre(genre,tags);
+        String prompt = readRandomPromptFromFileByGenre(genre,tags);
         requestPayload.put("prompt", prompt);
 
         try {
