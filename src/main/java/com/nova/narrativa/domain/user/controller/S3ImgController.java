@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,4 +49,17 @@ public class S3ImgController {
             return ResponseEntity.status(500).body("이미지 삭제 실패");
         }
     }
+    // S3 버킷에 있는 이미지 URL로 불러오기
+    @GetMapping("/images/urls")
+    public ResponseEntity<?> getAllImageUrls() {
+        try {
+            Map<String, String> imageUrls = s3ImageService.getAllPresignedImageUrls();
+            return ResponseEntity.ok(imageUrls);
+        } catch (Exception e) {
+            log.error("S3 이미지 URL 전체 조회 중 오류 발생", e);
+            return ResponseEntity.status(500).body("S3 이미지 URL 전체 조회 실패");
+        }
+    }
+
 }
+
