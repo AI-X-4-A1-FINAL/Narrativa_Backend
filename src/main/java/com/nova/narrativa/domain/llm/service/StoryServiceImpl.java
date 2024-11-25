@@ -6,6 +6,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.nio.file.Files;
@@ -47,18 +51,17 @@ public class StoryServiceImpl implements StoryService {
     @Override
     public String startGame(String genre, List<String> tags) {
 
-// 생존 확률 초기화 (최초 20~100% 랜덤으로 설정)
-//        if (!survivalProbabilityMap.containsKey(currentStage)) {
-//            double initialSurvivalProbability = Math.random() * 80 + 20; // 20~100% 사이의 랜덤 값
-//            survivalProbabilityMap.put(currentStage, initialSurvivalProbability);
-//        }
+        // 생존 확률 초기화 (최초 20~100% 랜덤으로 설정)
+        //        if (!survivalProbabilityMap.containsKey(currentStage)) {
+        //            double initialSurvivalProbability = Math.random() * 80 + 20; // 20~100% 사이의 랜덤 값
+        //            survivalProbabilityMap.put(currentStage, initialSurvivalProbability);
+        //        }
 
         // FastAPI로 전달할 데이터 생성
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("tags", tags);
-//        requestPayload.put("survivalProbability", survivalProbabilityMap.get(currentStage)); // 생존 확률 추가
-
+        //        requestPayload.put("survivalProbability", survivalProbabilityMap.get(currentStage)); // 생존 확률 추가
 
         // 프롬프트 추가
         String prompt = readPromptFromFile();
@@ -73,24 +76,39 @@ public class StoryServiceImpl implements StoryService {
     }
 
     @Override
-    public String continueStory(String initialStory, String userInput, int currentStage, String genre) {
-
-        // 이전 대화 내용 (첫 입력일 경우 빈 값 전달)
+    public String continueStory(int currentStage, String genre, String initialStory, String previousStory, String userInput ) {
+        // 이전 대화 내용을 업데이트
         String previousUserInput = previousUserInputMap.getOrDefault(currentStage, "");
 
         // FastAPI로 전달할 데이터 생성
         Map<String, Object> requestPayload = new HashMap<>();
-        requestPayload.put("genre", genre);
-        requestPayload.put("currentStage", currentStage);
-        requestPayload.put("initialStory", initialStory);
-        requestPayload.put("userInput", userInput);
-        requestPayload.put("previousUserInput", previousUserInput); // 이전 대화 내용 추가
+        requestPayload.put("currentStage", currentStage);  // 현재 스테이지 값 설정
+        requestPayload.put("genre", genre);  // 장르값 설정
+        requestPayload.put("initialStory", initialStory);  // 초기 스토리 값 설정
+        requestPayload.put("previousUserInput", previousUserInput);  // 이전 사용자 입력값 설정
+        requestPayload.put("userInput", userInput);  // 유저의 입력값 설정
 
-        // 이전 대화 내용 업데이트 (현재 유저 입력을 저장)
+        // 이전 입력 저장
         previousUserInputMap.put(currentStage, userInput);
 
+        // 로그 출력: FastAPI로 보내는 데이터 확인
+        logger.info("Sending data to FastAPI: {}", requestPayload);
+
+        // HttpHeaders 설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // HttpEntity 생성 (RequestPayload와 헤더 포함)
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
+
+        // FastAPI 요청 (exchange 사용)
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(fastApiUrl + "/api/story/chat", requestPayload, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    fastApiUrl + "/api/story/chat", // FastAPI URL
+                    HttpMethod.POST,               // POST 메서드
+                    entity,                        // 요청 데이터와 헤더
+                    String.class                   // 응답 타입
+            );
             return response.getBody();
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
@@ -98,4 +116,3 @@ public class StoryServiceImpl implements StoryService {
     }
 
 }
-
