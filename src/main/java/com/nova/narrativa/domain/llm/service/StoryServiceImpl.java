@@ -39,10 +39,13 @@ public class StoryServiceImpl implements StoryService {
         this.restTemplate = restTemplate;
     }
 
-    // 프롬프트 파일 읽기 메서드
-    private String readPromptFromFile() {
+    // genre에 맞는 프롬프트 파일 불러오기
+    private String readPromptFromFileByGenre(String genre, List<String> tags) {
+        String fileName = genre + ".txt"; // 예: "Survival.txt" 또는 "Romance.txt"
+        String filePath = promptFilePath + "/" + fileName;
+
         try {
-            return Files.readString(Paths.get(promptFilePath)); // 텍스트 파일 읽기
+            return Files.readString(Paths.get(filePath)); // 텍스트 파일 읽기
         } catch (Exception e) {
             throw new RuntimeException("프롬프트 파일 읽기 실패: " + e.getMessage());
         }
@@ -63,8 +66,7 @@ public class StoryServiceImpl implements StoryService {
         requestPayload.put("tags", tags);
         //        requestPayload.put("survivalProbability", survivalProbabilityMap.get(currentStage)); // 생존 확률 추가
 
-        // 프롬프트 추가
-        String prompt = readPromptFromFile();
+        String prompt = readPromptFromFileByGenre(genre,tags);
         requestPayload.put("prompt", prompt);
 
         try {
@@ -92,7 +94,7 @@ public class StoryServiceImpl implements StoryService {
         previousUserInputMap.put(currentStage, userInput);
 
         // 로그 출력: FastAPI로 보내는 데이터 확인
-        logger.info("Sending data to FastAPI: {}", requestPayload);
+//        logger.info("Sending data to FastAPI: {}", requestPayload);
 
         // HttpHeaders 설정
         HttpHeaders headers = new HttpHeaders();
