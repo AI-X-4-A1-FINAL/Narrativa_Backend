@@ -10,7 +10,6 @@ public interface StoryService {
             String initialStory,
             String previousStory,
             String userInput
-//            double survivalProbability // 생존 확률 추가
     );
 }
 
