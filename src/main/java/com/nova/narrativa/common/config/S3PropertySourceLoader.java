@@ -17,7 +17,7 @@ public class S3PropertySourceLoader implements ApplicationListener<ApplicationEn
 
     private final S3Client s3Client;
 
-    @Value("${aws.s3.bucket-name}")
+    @Value("${aws.s3.buket-yml}")
     private String bucketName;
 
     public S3PropertySourceLoader(S3Client s3Client) {
