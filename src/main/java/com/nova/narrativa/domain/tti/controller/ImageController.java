@@ -34,18 +34,19 @@ public class ImageController {
         System.out.println("Received Request: " + request);  // 디버깅용 출력 (보안에 주의해야 함)
 
         try {
-            // 이미지 생성 요청을 서비스로 전달
-            byte[] imageData = imageService.generateImage(request.getPrompt(), request.getSize(), request.getN());
+            // 이미지 생성 요청을 서비스로 전달하고, 생성된 이미지 URL을 반환
+            String imageUrl = imageService.generateImage(request.getPrompt(), request.getSize(), request.getN());
 
-            // 생성된 이미지 데이터를 응답으로 반환
+            // 생성된 이미지 URL을 응답으로 반환
             return ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_PNG)  // 생성된 이미지 타입 설정 (이미지 형식에 맞게 변경 가능)
-                    .body(imageData);
+                    .contentType(MediaType.APPLICATION_JSON)  // JSON 형태로 반환
+                    .body(imageUrl.getBytes());
 
         } catch (Exception e) {
             // 예외가 발생하면 500 오류와 함께 에러 메시지를 반환
             return ResponseEntity.status(500).body(("Error: " + e.getMessage()).getBytes());
         }
     }
+
 
 }
