@@ -1,15 +1,16 @@
 # 기본 이미지
 FROM amazoncorretto:21-alpine as builder
 
-# AWS CLI 설치
+# AWS CLI 설치 스크립트
 RUN apk add --no-cache curl unzip && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
     ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli && \
-    rm -rf awscliv2.zip ./aws
+    ln -s /usr/local/aws-cli/v2/current/bin/aws /usr/local/bin/aws && \
+    rm -rf awscliv2.zip aws
 
 # AWS CLI 설치 확인
-RUN aws --version
+RUN which aws && aws --version
 
 # 빌드 환경 설정
 WORKDIR /app
