@@ -1,23 +1,37 @@
 package com.nova.narrativa.domain.tti.service;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.UUID;
 
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -111,7 +125,7 @@ public class ImageService {
 //        }
 //    }
 
-    public String generateImage(String prompt, String size, int n) {
+    public ResponseEntity<String> generateImage(String prompt, String size, int n) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
 
         // Create payload for FastAPI
@@ -136,36 +150,57 @@ public class ImageService {
                     byte[].class
             );
 
-            byte[] imageBytes = response.getBody();
+            byte[] imageBytes = response.getBody(); //받아온 이미지
 
             if (imageBytes == null || imageBytes.length == 0) {
                 throw new RuntimeException("Received empty image from FastAPI");
             }
 
-            // Generate a unique image name (e.g., based on timestamp or UUID)
-            String imageName = "generated-image-" + System.currentTimeMillis() + ".png";
+            // Convert image bytes to Base64 string
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
 
-            // Upload image to S3 and get the URL
-            return uploadImageToS3(imageBytes, imageName);
+            // Return the Base64 image string in the response body
+            return ResponseEntity.ok(base64Image); // 이곳에서 base64 문자열 반환
+
         } catch (Exception e) {
-            // Throw exception with specific error message
-            throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
+            // Handle exceptions (e.g., FastAPI request failure)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to generate image: " + e.getMessage());
         }
     }
-
-    private String uploadImageToS3(byte[] imageBytes, String imageName) {
-        // Upload image to S3
-        var putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key("generated_images/" + imageName)
-                .contentType("image/png")
-                .build();
-
-        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes));
-
-        // Generate a presigned URL for the uploaded image (valid for 10 minutes)
-        return generatePresignedUrl("generated_images/" + imageName);
-    }
-
-
 }
+
+
+
+//            // Generate a unique image name (e.g., based on timestamp or UUID)
+//            String imageName = UUID.randomUUID().toString() + ".jpg";
+//
+//            // Upload image to S3 and get the URL
+//            return uploadImageToS3(imageBytes, imageName);
+//        } catch (Exception e) {
+//            // Throw exception with specific error message
+//            throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
+//        }
+//    }
+//
+//    private String uploadImageToS3(byte[] imageBytes, String imageName) {
+//        try {
+//            // PutObjectRequest 객체 생성 (버킷명, 파일명, 콘텐츠 타입 설정)
+//            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+//                    .bucket(bucketName)
+//                    .key(imageName) // S3에 저장될 파일의 경로 및 이름
+//                    .contentType("image/png") // 이미지 콘텐츠 타입 (예: image/png, image/jpeg)
+//                    .build();
+//
+//            // S3에 동기적으로 파일 업로드
+//            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes));
+//
+//            // 업로드된 파일에 대한 S3 URL 반환
+//            return s3Client.utilities().getUrl(builder -> builder.bucket(bucketName).key(imageName)).toExternalForm();
+//        } catch (AwsServiceException e) {
+//            throw new RuntimeException(e);
+//        } catch (SdkClientException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
+
