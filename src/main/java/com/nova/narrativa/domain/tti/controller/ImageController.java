@@ -35,12 +35,12 @@ public class ImageController {
 
         try {
             // 이미지 생성 요청을 서비스로 전달하고, 생성된 이미지 URL을 반환
-            String imageUrl = imageService.generateImage(request.getPrompt(), request.getSize(), request.getN());
+            ResponseEntity<String> imageUrl = imageService.generateImage(request.getPrompt(), request.getSize(), request.getN());
 
             // 생성된 이미지 URL을 응답으로 반환
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)  // JSON 형태로 반환
-                    .body(imageUrl.getBytes());
+                    .body(imageUrl.getBody().getBytes());
 
         } catch (Exception e) {
             // 예외가 발생하면 500 오류와 함께 에러 메시지를 반환
