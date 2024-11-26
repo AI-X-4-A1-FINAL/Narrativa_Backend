@@ -1,57 +1,44 @@
-# 1단계: 빌드 이미지 (Gradle 사용)
-FROM gradle:8.4.0-jdk21 AS builder
+# 기본 이미지
+FROM amazoncorretto:21-alpine as builder
 
-# 작업 디렉토리 설정
+# AWS CLI 설치
+RUN apk add --no-cache curl unzip && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip ./aws
+
+# 빌드 의존성 설치
 WORKDIR /app
+COPY . /app
 
-# 소스 코드 복사 및 Gradle 빌드 실행
-COPY . ./
-RUN gradle clean build -x test
-
-# 2단계: 실행 이미지
-FROM openjdk:21-slim
-
-# 작업 디렉토리 설정
-WORKDIR /app
-
-# 필요한 패키지 설치 및 AWS CLI 설정
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl unzip && \
-    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && ./aws/install && \
-    rm -rf awscliv2.zip ./aws && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 빌드 시 전달받을 환경 변수 정의
+# 빌드 환경 변수
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
 
-# AWS 환경 변수 설정
-ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-    AWS_DEFAULT_REGION=${AWS_REGION}
+# S3에서 application.yml 다운로드
+RUN aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
+    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
+    aws configure set region $AWS_REGION && \
+    aws s3 cp s3://$S3_BUCKET_NAME/$S3_FILE_KEY src/main/resources/application.yml
 
-# 필수 환경 변수 검증 및 S3에서 application.yml 다운로드
-RUN : "${AWS_ACCESS_KEY_ID:?ERROR: AWS_ACCESS_KEY_ID is not set!}" && \
-    : "${AWS_SECRET_ACCESS_KEY:?ERROR: AWS_SECRET_ACCESS_KEY is not set!}" && \
-    : "${AWS_DEFAULT_REGION:?ERROR: AWS_DEFAULT_REGION is not set!}" && \
-    : "${S3_BUCKET_NAME:?ERROR: S3_BUCKET_NAME is not set!}" && \
-    : "${S3_FILE_KEY:?ERROR: S3_FILE_KEY is not set!}" && \
-    mkdir -p /app/config && \
-    aws s3 cp s3://${S3_BUCKET_NAME}/${S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION} && \
-    echo "application.yml successfully downloaded to /app/config/application.yml"
+# Gradle 빌드
+RUN ./gradlew clean build -x test
 
-# 빌드된 JAR 파일 복사
+# 실제 애플리케이션 실행 단계
+FROM amazoncorretto:21-alpine
+
+# 앱 디렉토리 설정
+WORKDIR /app
+
+# 빌드 결과 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Spring Boot가 application.yml을 인식하도록 환경 변수 설정
-ENV SPRING_CONFIG_LOCATION=/app/config/application.yml
+# 로그 디렉토리 생성
+VOLUME /app/logs
 
-# 기본 포트 노출
-EXPOSE 8080
-
-# Spring Boot 애플리케이션 실행
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# 실행 명령
+ENTRYPOINT ["java", "-jar", "app.jar"]
