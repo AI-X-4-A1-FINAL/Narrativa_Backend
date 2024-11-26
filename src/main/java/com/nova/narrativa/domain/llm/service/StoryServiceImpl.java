@@ -11,39 +11,88 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class StoryServiceImpl implements StoryService {
 
+    private final S3Client s3Client;
     private final RestTemplate restTemplate;
     private static final Logger logger = LoggerFactory.getLogger(StoryServiceImpl.class);
 
     @Value("${ml.url}")
     private String fastApiUrl;
 
-    @Value("${prompt.file.path}")
-    private String promptFilePath;
+    @Value("${aws2.s3.bucket-name}")
+    private String bucketName;
 
-    private Map<Integer, Integer> userInputCountMap = new HashMap<>(); // 스테이지마다 유저 입력 횟수 카운트
-    private Map<Integer, Double> survivalProbabilityMap = new HashMap<>(); // 스테이지마다 생존 확률 관리
+    @Value("${aws2.s3.region}")
+    private String region;
+
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
 
     @Autowired
-    public StoryServiceImpl(RestTemplate restTemplate) {
+    public StoryServiceImpl(RestTemplate restTemplate, S3Client s3Client) {
         this.restTemplate = restTemplate;
+        this.s3Client = s3Client;
     }
 
-    // 프롬프트 파일 읽기 메서드
-    private String readPromptFromFile() {
+    // genre에 맞는 프롬프트 파일 불러오기 (랜덤 파일)
+    private String readRandomPromptFromFileByGenre(String genre, List<String> tags) {
+        String folderKey = genre + "/"; // 예: "Survival/" 또는 "Romance/"
+
         try {
-            return Files.readString(Paths.get(promptFilePath)); // 텍스트 파일 읽기
-        } catch (Exception e) {
+            // S3에서 파일 목록을 가져오기
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(folderKey)  // 해당 genre 폴더 안의 파일들만 가져옴
+                    .build();
+
+            ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
+            List<String> fileKeys = new ArrayList<>();
+
+            // 파일 목록을 수집
+            listResponse.contents().forEach(s3Object -> fileKeys.add(s3Object.key()));
+
+            if (fileKeys.isEmpty()) {
+                throw new RuntimeException("해당 폴더에 파일이 없습니다.");
+            }
+
+            // 파일 목록에서 랜덤으로 파일 선택
+            Random random = new Random();
+            String randomFileKey = fileKeys.get(random.nextInt(fileKeys.size())); // 랜덤 파일 선택
+
+            // 선택된 파일 읽기
+            InputStream inputStream = s3Client.getObject(
+                    GetObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(randomFileKey)
+                            .build(),
+                    ResponseTransformer.toInputStream()
+            );
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            StringBuilder fileContent = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                fileContent.append(line).append("\n");
+            }
+            return fileContent.toString();
+        } catch (SdkException | IOException e) {
+            logger.error("S3에서 파일 읽기 실패: ", e);
             throw new RuntimeException("프롬프트 파일 읽기 실패: " + e.getMessage());
         }
     }
@@ -51,20 +100,13 @@ public class StoryServiceImpl implements StoryService {
     @Override
     public String startGame(String genre, List<String> tags) {
 
-        // 생존 확률 초기화 (최초 20~100% 랜덤으로 설정)
-        //        if (!survivalProbabilityMap.containsKey(currentStage)) {
-        //            double initialSurvivalProbability = Math.random() * 80 + 20; // 20~100% 사이의 랜덤 값
-        //            survivalProbabilityMap.put(currentStage, initialSurvivalProbability);
-        //        }
-
         // FastAPI로 전달할 데이터 생성
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("tags", tags);
         //        requestPayload.put("survivalProbability", survivalProbabilityMap.get(currentStage)); // 생존 확률 추가
 
-        // 프롬프트 추가
-        String prompt = readPromptFromFile();
+        String prompt = readRandomPromptFromFileByGenre(genre,tags);
         requestPayload.put("prompt", prompt);
 
         try {
@@ -92,7 +134,7 @@ public class StoryServiceImpl implements StoryService {
         previousUserInputMap.put(currentStage, userInput);
 
         // 로그 출력: FastAPI로 보내는 데이터 확인
-        logger.info("Sending data to FastAPI: {}", requestPayload);
+//        logger.info("Sending data to FastAPI: {}", requestPayload);
 
         // HttpHeaders 설정
         HttpHeaders headers = new HttpHeaders();

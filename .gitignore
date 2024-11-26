@@ -232,5 +232,10 @@ S3Config.java
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij,java,gradle
 
+<<<<<<< Updated upstream
 application.yml
 .env
+=======
+src/main/resources/application.yml
+
+>>>>>>> Stashed changes

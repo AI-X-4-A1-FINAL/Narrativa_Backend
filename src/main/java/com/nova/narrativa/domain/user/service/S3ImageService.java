@@ -1,9 +1,14 @@
 package com.nova.narrativa.domain.user.service;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.nova.narrativa.domain.user.error.S3CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -30,10 +35,6 @@ public class S3ImageService {
 
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
-    private final S3AsyncClient s3AsyncClient;
-
-
-
 
     @Value("${aws.s3.images-storage-buckets}")
     private String bucketName;
@@ -145,6 +146,27 @@ public class S3ImageService {
         }
     }
 
+    // AWS S3 저장 후, 응답받은 Presigned URL을 이용하여 해당 img 접근 가능 url 가져오기
+    public String getS3ImgByPresignedUrl(String filename) {
+        String imgUrl = "";
+        try {
+            // S3 버킷에서 객체 목록 가져오기
+            ListObjectsV2Response listObjects = s3Client.listObjectsV2(builder -> builder.bucket(bucketName));
+
+            listObjects.contents().forEach(s3Object -> {
+                String key = s3Object.key();
+                String presignedUrl = generatePresignedUrl(key);
+            });
+
+            log.info("S3 이미지 URL 목록 생성 완료");
+        } catch (Exception e) {
+            log.error("S3 객체 목록 조회 실패", e);
+            throw new S3CustomException("S3 객체 목록 조회 실패");
+        }
+
+        return imgUrl;
+
+    }
 
     // 이미지를 가져오는 메서드 추가
     public Map<String, String> getAllPresignedImageUrls() {
@@ -183,6 +205,34 @@ public class S3ImageService {
         } catch (Exception e) {
             log.error("Presigned URL 생성 실패: {}", key, e);
             throw new S3CustomException("Presigned URL 생성 실패: " + key);
+        }
+    }
+
+    /**
+     * 주어진 S3 버킷명, 폴더명, 파일명으로 S3에서 파일을 조회할 수 있는 Presigned URL을 생성하는 메서드
+     */
+    public String getPresignedUrl(String filePath) {
+
+        try {
+            // Presigned URL 요청을 생성
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(filePath)
+                    .build();
+
+            // Presigned URL을 생성 (유효 기간은 60분으로 설정)
+            PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presigner ->
+                    presigner.getObjectRequest(getObjectRequest)
+                            .signatureDuration(Duration.ofMinutes(60)) // URL 유효 시간 설정
+            );
+
+            // 생성된 Presigned URL 반환
+            URL presignedUrl = presignedRequest.url();
+            log.info("Presigned URL 생성 성공: {}", presignedUrl);
+            return presignedUrl.toString();
+        } catch (Exception e) {
+            log.error("Presigned URL 생성 실패", e);
+            throw new RuntimeException("S3에서 Presigned URL을 생성할 수 없습니다.");
         }
     }
 }

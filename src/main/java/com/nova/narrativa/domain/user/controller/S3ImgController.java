@@ -1,13 +1,14 @@
 package com.nova.narrativa.domain.user.controller;
 
+
 import com.nova.narrativa.domain.user.service.S3ImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,6 +50,21 @@ public class S3ImgController {
             return ResponseEntity.status(500).body("이미지 삭제 실패");
         }
     }
+
+    // S3 버킷에 1개의 이미지 URL로 불러오기(filePath: 폴더명/파일명)
+    @GetMapping("/image")
+    public ResponseEntity<String> getImageUrl(@RequestParam String filePath) {
+        try {
+            // Presigned URL 생성
+            String presignedUrl = s3ImageService.getPresignedUrl(filePath);
+            System.out.println("Presigned URL: " + presignedUrl);
+            return ResponseEntity.ok(presignedUrl);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // S3 버킷에 있는 이미지 URL로 불러오기
     @GetMapping("/images/urls")
     public ResponseEntity<?> getAllImageUrls() {
@@ -62,4 +78,3 @@ public class S3ImgController {
     }
 
 }
-
