@@ -1,15 +1,20 @@
 # 기본 이미지
 FROM amazoncorretto:21-alpine as builder
 
-# AWS CLI 설치
-RUN apk add --no-cache curl unzip bash && \
+# glibc 및 AWS CLI 설치
+RUN apk add --no-cache curl unzip bash binutils && \
+    curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
+    curl -Lo glibc.apk https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r0/glibc-2.35-r0.apk && \
+    apk add --no-cache ./glibc.apk && \
+    rm -f glibc.apk && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
     ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli && \
     rm -rf awscliv2.zip aws
 
 # AWS CLI 설치 확인
-RUN echo "PATH=$PATH" && which aws && aws --version
+RUN which aws && aws --version
+
 
 # 빌드 환경 설정
 WORKDIR /app
