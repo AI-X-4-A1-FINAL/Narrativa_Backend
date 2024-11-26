@@ -1,22 +1,22 @@
 package com.nova.narrativa.domain.tti.service;
 
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-
-
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -25,29 +25,28 @@ public class ImageService {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
+    private final RestTemplate restTemplate;
+
+    @Value("${ml.url}")
+    private String fastApiUrl;  // FastAPI 서버의 URL
 
     @Value("${aws.s3.images-storage-buckets}")
     private String bucketName;
 
-    @PreDestroy
-    public void closeS3Client() {
-        s3Client.close();
-    }
-
     // Get a list of image files from S3 bucket
     public List<String> getImageFiles() {
-        ListObjectsV2Request request = ListObjectsV2Request.builder()
+        // List all image files from the S3 bucket
+        var request = ListObjectsV2Request.builder()
                 .bucket(bucketName)
-                .prefix("")  // Optional: you can filter images by a specific prefix, if needed
+                .prefix("survival_images/")
                 .build();
 
-        ListObjectsV2Response response = s3Client.listObjectsV2(request);
+        var response = s3Client.listObjectsV2(request);
 
         List<String> imageFiles = new ArrayList<>();
-
-        for (S3Object s3Object : response.contents()) {
+        for (var s3Object : response.contents()) {
             String key = s3Object.key();
-            // Assuming images have extensions like .jpg, .png, etc.
+            // Filter image types: jpg, png, jpeg
             if (key.endsWith(".jpg") || key.endsWith(".png") || key.endsWith(".jpeg")) {
                 imageFiles.add(key);
             }
@@ -58,8 +57,8 @@ public class ImageService {
 
     // Generate a presigned URL for accessing an image file
     public String generatePresignedUrl(String key) {
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(10))  // URL validity duration
+        var presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(10))
                 .getObjectRequest(getRequest -> getRequest.bucket(bucketName).key(key))
                 .build();
 
@@ -78,6 +77,95 @@ public class ImageService {
         return generatePresignedUrl(randomImageFile);
     }
 
+//    // Generate an image from FastAPI
+//    public byte[] generateImage(String prompt, String size, int n) {
+//        String generateImageUrl = fastApiUrl + "/api/images/generate-image";
+//
+//        // Create payload for FastAPI
+//        Map<String, Object> requestPayload = Map.of(
+//                "prompt", prompt,
+//                "size", size,
+//                "n", n
+//        );
+//
+//        // Set up HTTP headers (application/json)
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_JSON);
+//
+//        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
+//
+//        try {
+//            // Send POST request to FastAPI
+//            ResponseEntity<byte[]> response = restTemplate.exchange(
+//                    generateImageUrl,
+//                    HttpMethod.POST,
+//                    entity,
+//                    byte[].class
+//            );
+//
+//            // Return generated image
+//            return response.getBody();
+//        } catch (Exception e) {
+//            // Throw exception with specific error message
+//            throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
+//        }
+//    }
+
+    public String generateImage(String prompt, String size, int n) {
+        String generateImageUrl = fastApiUrl + "/api/images/generate-image";
+
+        // Create payload for FastAPI
+        Map<String, Object> requestPayload = Map.of(
+                "prompt", prompt,
+                "size", size,
+                "n", n
+        );
+
+        // Set up HTTP headers (application/json)
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
+
+        try {
+            // Send POST request to FastAPI
+            ResponseEntity<byte[]> response = restTemplate.exchange(
+                    generateImageUrl,
+                    HttpMethod.POST,
+                    entity,
+                    byte[].class
+            );
+
+            byte[] imageBytes = response.getBody();
+
+            if (imageBytes == null || imageBytes.length == 0) {
+                throw new RuntimeException("Received empty image from FastAPI");
+            }
+
+            // Generate a unique image name (e.g., based on timestamp or UUID)
+            String imageName = "generated-image-" + System.currentTimeMillis() + ".png";
+
+            // Upload image to S3 and get the URL
+            return uploadImageToS3(imageBytes, imageName);
+        } catch (Exception e) {
+            // Throw exception with specific error message
+            throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
+        }
+    }
+
+    private String uploadImageToS3(byte[] imageBytes, String imageName) {
+        // Upload image to S3
+        var putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key("generated_images/" + imageName)
+                .contentType("image/png")
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes));
+
+        // Generate a presigned URL for the uploaded image (valid for 10 minutes)
+        return generatePresignedUrl("generated_images/" + imageName);
+    }
 
 
 }
