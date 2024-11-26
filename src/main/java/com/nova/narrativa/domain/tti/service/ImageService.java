@@ -108,4 +108,5 @@ public class ImageService {
             throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
         }
     }
+
 }
