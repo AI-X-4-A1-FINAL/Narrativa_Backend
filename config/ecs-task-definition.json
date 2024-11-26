@@ -15,8 +15,8 @@
       ],
       "environment": [
         {
-          "name": "S3_FILE_KEY",
-          "value": "narra_config/application.yml"
+          "name": "SPRING_CONFIG_LOCATION",
+          "value": "/app/config/application.yml"
         },
         {
           "name": "TZ",
