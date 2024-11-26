@@ -17,8 +17,20 @@ services:
       - "8080:8080" # 로컬 포트 8080 -> 컨테이너 포트 8080
     environment:
       SPRING_PROFILES_ACTIVE: production # 스프링 프로파일
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_FILE_KEY: ${S3_FILE_KEY}
     volumes:
       - narrativa-logs:/app/logs # 로그 디렉토리 공유
+    command: >
+      sh -c "
+      aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID &&
+      aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY &&
+      aws configure set region $AWS_REGION &&
+      aws s3 cp s3://$S3_BUCKET_NAME/$S3_FILE_KEY /app/resources/application.yml &&
+      java -jar app.jar"
     restart: unless-stopped
 
 volumes:
