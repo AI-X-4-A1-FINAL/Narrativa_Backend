@@ -21,8 +21,7 @@ public class S3PropertySourceLoader implements ApplicationListener<ApplicationEn
 
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
-        String activeProfile = event.getEnvironment().getProperty("spring.profiles.active", "default");
-        String key = "application-" + activeProfile + ".yml"; // 동적 프로파일 파일 선택
+        String key = "application.yml"; // 동적 프로파일 파일 선택
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucketName)
