@@ -1,5 +1,6 @@
 package com.nova.narrativa.domain.user.controller;
 
+
 import com.nova.narrativa.domain.user.service.S3ImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,4 +78,3 @@ public class S3ImgController {
     }
 
 }
-
