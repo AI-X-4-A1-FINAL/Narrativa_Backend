@@ -1,16 +1,14 @@
 # 기본 이미지
-FROM amazoncorretto:21-alpine as builder
+FROM amazoncorretto:21 as builder
 
-# 필수 패키지 및 glibc 설치
-RUN apk add --no-cache curl unzip bash binutils && \
-    curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
-    curl -Lo glibc.apk https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r0/glibc-2.35-r0.apk && \
-    apk add --no-cache --force-overwrite ./glibc.apk && \
-    rm -f glibc.apk && \
+# AWS CLI 설치
+RUN apt-get update && \
+    apt-get install -y curl unzip && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
-    ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli && \
-    rm -rf awscliv2.zip aws
+    ./aws/install && \
+    rm -rf awscliv2.zip aws && \
+    apt-get clean
 
 # AWS CLI 설치 확인
 RUN echo "PATH=$PATH" && which aws && aws --version
@@ -46,7 +44,7 @@ RUN if [ -n "$S3_BUCKET_NAME" ] && [ -n "$S3_FILE_KEY" ]; then \
 RUN ./gradlew clean build -x test
 
 # 실행 이미지 준비
-FROM amazoncorretto:21-alpine
+FROM amazoncorretto:21
 
 # 작업 디렉토리 설정
 WORKDIR /app
