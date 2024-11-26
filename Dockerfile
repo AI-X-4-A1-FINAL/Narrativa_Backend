@@ -1,7 +1,7 @@
 # 기본 이미지
 FROM amazoncorretto:21 as builder
 
-# AWS CLI 설치
+# AWS CLI 및 필수 패키지 설치
 RUN apt-get update && \
     apt-get install -y curl unzip && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
@@ -11,7 +11,7 @@ RUN apt-get update && \
     apt-get clean
 
 # AWS CLI 설치 확인
-RUN echo "PATH=$PATH" && which aws && aws --version
+RUN which aws && aws --version
 
 # 빌드 환경 설정
 WORKDIR /app
