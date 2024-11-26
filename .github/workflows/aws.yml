@@ -2,7 +2,7 @@ name: Deploy to Amazon ECS using Docker Compose
 
 on:
   push:
-    branches: ["main"]
+    branches: ["dev"]
   workflow_dispatch:
 
 jobs:
