@@ -39,9 +39,6 @@ public class StoryServiceImpl implements StoryService {
     @Value("${aws.s3.prompt-name}")
     private String bucketName;
 
-    @Value("${aws.s3.region}")
-    private String region;
-
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
 
     @Autowired
