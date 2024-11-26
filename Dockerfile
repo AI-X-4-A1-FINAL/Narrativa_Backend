@@ -14,11 +14,13 @@ FROM openjdk:21-slim
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# AWS CLI 설치
-RUN apt-get update && apt-get install -y curl unzip && \
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+# 필요한 패키지 설치 및 AWS CLI 설정
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl unzip && \
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && ./aws/install && \
-    rm -rf awscliv2.zip ./aws && apt-get clean
+    rm -rf awscliv2.zip ./aws && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 빌드 시 전달받을 환경 변수 정의
 ARG AWS_ACCESS_KEY_ID
@@ -28,20 +30,19 @@ ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
 
 # AWS 환경 변수 설정
-ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-ENV AWS_DEFAULT_REGION=${AWS_REGION}
+ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+    AWS_DEFAULT_REGION=${AWS_REGION}
 
-# 필수 환경 변수 검증
+# 필수 환경 변수 검증 및 S3에서 application.yml 다운로드
 RUN : "${AWS_ACCESS_KEY_ID:?ERROR: AWS_ACCESS_KEY_ID is not set!}" && \
     : "${AWS_SECRET_ACCESS_KEY:?ERROR: AWS_SECRET_ACCESS_KEY is not set!}" && \
     : "${AWS_DEFAULT_REGION:?ERROR: AWS_DEFAULT_REGION is not set!}" && \
     : "${S3_BUCKET_NAME:?ERROR: S3_BUCKET_NAME is not set!}" && \
-    : "${S3_FILE_KEY:?ERROR: S3_FILE_KEY is not set!}"
-
-# S3에서 application.yml 다운로드 및 설정
-RUN mkdir -p /app/config && \
-    aws s3 cp s3://${S3_BUCKET_NAME}/${S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION}
+    : "${S3_FILE_KEY:?ERROR: S3_FILE_KEY is not set!}" && \
+    mkdir -p /app/config && \
+    aws s3 cp s3://${S3_BUCKET_NAME}/${S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION} && \
+    echo "application.yml successfully downloaded to /app/config/application.yml"
 
 # 빌드된 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
