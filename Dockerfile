@@ -1,11 +1,11 @@
 # 기본 이미지
 FROM amazoncorretto:21-alpine as builder
 
-# glibc 및 AWS CLI 설치
+# 필수 패키지 및 glibc 설치
 RUN apk add --no-cache curl unzip bash binutils && \
     curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
     curl -Lo glibc.apk https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r0/glibc-2.35-r0.apk && \
-    apk add --no-cache ./glibc.apk && \
+    apk add --no-cache --force-overwrite ./glibc.apk && \
     rm -f glibc.apk && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
@@ -13,30 +13,25 @@ RUN apk add --no-cache curl unzip bash binutils && \
     rm -rf awscliv2.zip aws
 
 # AWS CLI 설치 확인
-RUN which aws && aws --version
-
+RUN echo "PATH=$PATH" && which aws && aws --version
 
 # 빌드 환경 설정
 WORKDIR /app
-
-# 소스 복사
 COPY . /app
 
-# Docker Compose로 전달받은 빌드 인수
+# S3에서 application.yml 다운로드
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
 
-# 환경 변수로 설정
 ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 ENV AWS_REGION=$AWS_REGION
 ENV S3_BUCKET_NAME=$S3_BUCKET_NAME
 ENV S3_FILE_KEY=$S3_FILE_KEY
 
-# S3에서 application.yml 다운로드
 RUN if [ -n "$S3_BUCKET_NAME" ] && [ -n "$S3_FILE_KEY" ]; then \
         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
