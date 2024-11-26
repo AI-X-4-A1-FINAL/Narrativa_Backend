@@ -1,4 +1,4 @@
-package com.nova.narrativa.domain.tti.controller;
+package com.nova.narrativa.domain.tti.dto;
 
 public class ImageResponse {
 
