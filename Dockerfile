@@ -17,19 +17,21 @@ WORKDIR /app
 # 소스 복사
 COPY . /app
 
-# S3에서 application.yml 다운로드
+# Docker Compose로 전달받은 빌드 인수
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
 
+# 환경 변수로 설정
 ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 ENV AWS_REGION=$AWS_REGION
 ENV S3_BUCKET_NAME=$S3_BUCKET_NAME
 ENV S3_FILE_KEY=$S3_FILE_KEY
 
+# S3에서 application.yml 다운로드
 RUN if [ -n "$S3_BUCKET_NAME" ] && [ -n "$S3_FILE_KEY" ]; then \
         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
