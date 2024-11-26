@@ -2,14 +2,14 @@
 FROM amazoncorretto:21-alpine as builder
 
 # AWS CLI 설치
-RUN apt-get update && \
-    apt-get install -y curl unzip && \
+RUN apk add --no-cache curl unzip && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && ./aws/install && \
-    rm -rf awscliv2.zip ./aws && apt-get clean && rm -rf /var/lib/apt/lists/*
+    unzip awscliv2.zip && \
+    ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli && \
+    rm -rf awscliv2.zip ./aws
 
 # AWS CLI 설치 확인
-RUN echo $PATH && aws --version
+RUN aws --version
 
 # 빌드 환경 설정
 WORKDIR /app
