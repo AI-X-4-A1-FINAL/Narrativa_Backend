@@ -1,13 +1,19 @@
 # 1단계: 빌드 이미지 (Gradle 사용)
 FROM gradle:8.4.0-jdk21 AS builder
 
+# 작업 디렉토리 설정
 WORKDIR /app
+
+# 소스 코드 복사
 COPY . ./
+
+# Gradle 빌드, 테스트는 제외
 RUN gradle clean build -x test
 
 # 2단계: 실행 이미지
 FROM openjdk:21-slim
 
+# 작업 디렉토리 설정
 WORKDIR /app
 
 # AWS CLI 설치
@@ -15,7 +21,8 @@ RUN apt-get update && \
     apt-get install -y curl unzip && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && ./aws/install && \
-    rm -rf awscliv2.zip ./aws && apt-get clean && rm -rf /var/lib/apt/lists/*
+    rm -rf awscliv2.zip ./aws && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 빌드 시 전달받을 환경 변수
 ARG AWS_ACCESS_KEY_ID
@@ -23,19 +30,15 @@ ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
-ARG S3_FILE_KEYY
-ARG S3_FILE_KEY_OVERRIDE
 
 # AWS 환경 변수 설정
 ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 ENV AWS_DEFAULT_REGION=${AWS_REGION}
 ENV S3_BUCKET_NAME=${S3_BUCKET_NAME}
+ENV FINAL_S3_FILE_KEY=${S3_FILE_KEY}
 
-# 동적으로 설정 파일 키 결정
-ENV FINAL_S3_FILE_KEY=${S3_FILE_KEY_OVERRIDE:-${S3_FILE_KEY}}
-
-# 환경 변수 검증
+# 환경 변수 검증 및 S3에서 설정 파일 다운로드
 RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
         echo "ERROR: AWS_ACCESS_KEY_ID is not set!"; exit 1; \
     fi && \
@@ -50,20 +53,17 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
     fi && \
     if [ -z "${FINAL_S3_FILE_KEY}" ]; then \
         echo "ERROR: FINAL_S3_FILE_KEY is not set!"; exit 1; \
-    fi
-
-# S3에서 설정 파일 다운로드
-RUN mkdir -p /app/config && \
+    fi && \
+    mkdir -p /app/config && \
     echo "Downloading configuration file: ${FINAL_S3_FILE_KEY}" && \
-    if ! aws s3 cp s3://${S3_BUCKET_NAME}/${FINAL_S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION}; then \
-        echo "ERROR: Failed to download ${FINAL_S3_FILE_KEY} from S3"; exit 1; \
-    fi
+    aws s3 cp s3://${S3_BUCKET_NAME}/${FINAL_S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION} || \
+    { echo "ERROR: Failed to download ${FINAL_S3_FILE_KEY} from S3"; exit 1; }
 
 # 빌드된 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar /app/app.jar
 
 # Spring Boot가 application.yml을 인식하도록 설정
-ENV SPRING_CONFIG_LOCATION=/app/config/application.yml
+ENV SPRING_CONFIG_LOCATION=classpath:/application.yml,file:/app/config/application.yml
 
 # 기본 포트 설정
 EXPOSE 8080
