@@ -13,10 +13,10 @@ public class KakaoService {
 
     private final KakaoApi kakaoApi;
 
-    public SocialLoginResult kakaoLogin(String AuthCode) throws Exception {
+    public SocialLoginResult login(String authCode) throws Exception {
 
         // 2. 토큰 받기
-        String accessToken = kakaoApi.getUserInfo(AuthCode);
+        String accessToken = kakaoApi.getUserInfo(authCode);
         log.info("accessToken = {}", accessToken);
 
         // 3. 사용자 정보 받기

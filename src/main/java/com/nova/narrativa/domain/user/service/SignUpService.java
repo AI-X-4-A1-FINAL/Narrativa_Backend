@@ -33,8 +33,8 @@ public class SignUpService {
             signUpUser.setProfile_url(signUp.getProfile_url());
             signUpUser.setLoginType(User.LoginType.valueOf(signUp.getLogin_type()));
 
-            // 이메일이 없으면 새로운 회원가입 진행
-            userRepository.save(signUpUser);
+            User savedUser = userRepository.save(signUpUser);
+            log.info(String.format("회원 가입 완료: %s", savedUser));
         }
     }
 
@@ -119,5 +119,9 @@ public class SignUpService {
 
     public Optional<User> getUserProfileInfo(Long userId) {
         return userRepository.findById(userId);
+    }
+
+    public void saveUser(User user) {
+        userRepository.save(user);
     }
 }
