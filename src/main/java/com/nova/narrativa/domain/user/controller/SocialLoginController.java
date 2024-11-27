@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.util.Optional;
 
 @RequestMapping("/login")
@@ -30,13 +32,15 @@ public class SocialLoginController {
     private final String frontUrl;
     private final String frontSignupPart;
     private final String redirectUrl;
+    private final String serverDomainUrl;
 
     public SocialLoginController(KakaoService kakaoService,
                                  GoogleService googleService,
                                  GithubService githubService,
                                  SignUpService signUpService,
                                  @Value("${front.url}") String frontUrl,
-                                 @Value("${front.signup-part}") String frontSignupPart) {
+                                 @Value("${front.signup-part}") String frontSignupPart,
+                                 @Value("${server.url}") String serverUrl) {
 
         this.kakaoService = kakaoService;
         this.googleService = googleService;
@@ -45,6 +49,8 @@ public class SocialLoginController {
         this.frontUrl = frontUrl;
         this.frontSignupPart = frontSignupPart;
         this.redirectUrl = frontUrl + frontSignupPart;
+        this.serverDomainUrl = getDomainFromUrl(serverUrl);
+        log.info("serverDomainUrl: {}", serverDomainUrl);
     }
 
     @GetMapping("/kakao")
@@ -96,10 +102,7 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            
-            // http, https 환경 동작
-            log.info("http, https 환경 cookie test 중입니다.");
-            String idCookie = String.format("id=%d; domain=narrativa.kr; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -160,7 +163,7 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -221,7 +224,7 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -253,23 +256,23 @@ public class SocialLoginController {
         return ResponseEntity.ok().body("로그아웃 성공");
     }
 
-    @GetMapping("/test")
-    public void test(HttpServletResponse response) throws IOException {
-        // 리다이렉트할 URL
-        String redirectUrl = "https://www.narrativa.kr";
+    private String getDomainFromUrl(String urlString) {
+        try {
+            // URI 객체를 생성하고, toURL()을 사용하여 URL 객체를 생성
+            URI uri = new URI(urlString);
+            URL url = uri.toURL();
 
-        // 클라이언트 측에서 sessionStorage 또는 localStorage에 데이터를 저장하도록 JavaScript 코드 삽입
-        String html = "<html>"
-                + "<body>"
-                + "<script type=\"text/javascript\">"
-                + "sessionStorage.setItem('id', 'test');"  // 데이터 저장
-                + "window.location.href = '" + redirectUrl + "';"  // 리다이렉트
-                + "</script>"
-                + "</body>"
-                + "</html>";
+            // 호스트명 추출
+            String host = url.getHost();
 
-        // HTML 페이지로 리턴하여 클라이언트에서 처리
-        response.setContentType("text/html");
-        response.getWriter().write(html);
+            // 도메인 부분만 추출 (상위 도메인 + 최상위 도메인)
+            String[] domainParts = host.split("\\.");
+
+            // 최상위 도메인 + 두 번째 레벨 도메인만 반환 (예: test.kr)
+            return domainParts.length >= 2 ? domainParts[domainParts.length - 2] + "." + domainParts[domainParts.length - 1] : host;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // 예외 처리
+        }
     }
 }
