@@ -13,10 +13,10 @@ public class GoogleService {
 
     private final GoogleApi googleApi;
 
-    public SocialLoginResult login(String authCode) throws Exception {
+    public SocialLoginResult googleLogin(String AuthCode) throws Exception {
 
         // 2. 토큰 받기
-        String accessToken = googleApi.getUserInfo(authCode);
+        String accessToken = googleApi.getUserInfo(AuthCode);
         log.info("accessToken = {}", accessToken);
 
         // 3. 사용자 정보 받기

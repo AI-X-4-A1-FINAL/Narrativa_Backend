@@ -13,10 +13,10 @@ public class GithubService {
 
     private final GithubApi githubApi;
 
-    public SocialLoginResult login(String authCode) throws Exception {
+    public SocialLoginResult githubLogin(String AuthCode) throws Exception {
 
         // 2. 토큰 받기
-        String accessToken = githubApi.getUserInfo(authCode);
+        String accessToken = githubApi.getUserInfo(AuthCode);
         log.info("accessToken = {}", accessToken);
 
         // 3. 사용자 정보 받기
