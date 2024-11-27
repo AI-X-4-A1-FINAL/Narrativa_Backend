@@ -51,9 +51,12 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
         echo "ERROR: FINAL_S3_FILE_KEY is not set!"; exit 1; \
     fi
 
-# amazon-ssm-agent 설치 (APT 사용)
+# amazon-ssm-agent 설치
 RUN apt-get update && \
-    apt-get install -y amazon-ssm-agent && \
+    apt-get install -y wget && \
+    wget https://s3.amazonaws.com/amazon-ssm-us-east-1/latest/debian_amd64/amazon-ssm-agent.deb && \
+    dpkg -i amazon-ssm-agent.deb && \
+    rm -f amazon-ssm-agent.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # amazon-ssm-agent 시작 설정
