@@ -95,12 +95,13 @@ public class SocialLoginController {
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
             
-            // http 환경 동작
-//            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            // http, https 환경 동작
+            log.info("http, https 환경 cookie test 중입니다.");
+            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
 
             // https 환경 동작
-            log.info("https 환경 cookie test 중입니다.");
-            String idCookie = String.format("id=%d; SameSite=Strict; Secure; HttpOnly; Path=/", dbId);
+//            log.info("https 환경 cookie test 중입니다.");
+//            String idCookie = String.format("id=%d; SameSite=Strict; Secure; HttpOnly; Path=/", dbId);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
