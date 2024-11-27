@@ -39,44 +39,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-compose
 
-      - name: Verify Docker Compose installation
-        run: docker compose version
-
-      - name: Verify AWS CLI installation
-        run: aws --version
-
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and tag Docker image using Docker Compose
+      - name: Build and push Docker image
         env:
           ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_FILE_KEY: ${{ secrets.S3_FILE_KEY }}
         run: |
-          # 다운로드된 S3 파일을 Docker 이미지에 포함
-          aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/${{ secrets.S3_FILE_KEY }} ./src/main/resources/application.yml
-          
-          docker compose build \
-            --build-arg AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            --build-arg AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            --build-arg AWS_REGION=${{ secrets.AWS_REGION }} \
-            --build-arg S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }} \
-            --build-arg S3_FILE_KEY=${{ secrets.S3_FILE_KEY }} \
-            --build-arg AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            --build-arg AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          
+          docker compose build
           docker tag narrativa-backend:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
+      - name: Fill in the new image ID in the ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -84,10 +60,10 @@ jobs:
           container-name: ${{ secrets.CONTAINER_NAME }}
           image: "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 
-      - name: Deploy Amazon ECS task definition
+      - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ secrets.ECS_SERVICE }}
           cluster: ${{ secrets.ECS_CLUSTER }}
+          service: ${{ secrets.ECS_SERVICE }}
           wait-for-service-stability: true
