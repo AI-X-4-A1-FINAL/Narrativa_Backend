@@ -61,6 +61,7 @@ public class SocialLoginController {
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
+                log.info("해당 유저가 존재합니다.");
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
@@ -93,7 +94,13 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            
+            // http 환경 동작
+//            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+
+            // https 환경 동작
+            log.info("https 환경 cookie test 중입니다.");
+            String idCookie = String.format("id=%d; SameSite=Strict; Secure; HttpOnly; Path=/", dbId);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
