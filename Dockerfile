@@ -17,18 +17,6 @@ RUN apt-get update && \
     unzip awscliv2.zip && ./aws/install && \
     rm -rf awscliv2.zip ./aws && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# amazon-ssm-agent 설치
-RUN apt-get update && \
-    apt-get install -y wget && \
-    wget https://s3.amazonaws.com/amazon-ssm-${AWS_REGION}/latest/debian_amd64/amazon-ssm-agent.deb && \
-    dpkg -i amazon-ssm-agent.deb && \
-    rm -f amazon-ssm-agent.deb && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# amazon-ssm-agent 시작 설정
-RUN systemctl enable amazon-ssm-agent && \
-    systemctl start amazon-ssm-agent
-
 # 빌드 시 전달받을 환경 변수
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
@@ -63,6 +51,18 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
     if [ -z "${FINAL_S3_FILE_KEY}" ]; then \
         echo "ERROR: FINAL_S3_FILE_KEY is not set!"; exit 1; \
     fi
+
+# amazon-ssm-agent 설치
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget https://s3.amazonaws.com/amazon-ssm-${AWS_REGION}/latest/debian_amd64/amazon-ssm-agent.deb && \
+    dpkg -i amazon-ssm-agent.deb && \
+    rm -f amazon-ssm-agent.deb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# amazon-ssm-agent 시작 설정
+RUN systemctl enable amazon-ssm-agent && \
+    systemctl start amazon-ssm-agent
 
 # S3에서 설정 파일 다운로드
 RUN mkdir -p /app/config && \
