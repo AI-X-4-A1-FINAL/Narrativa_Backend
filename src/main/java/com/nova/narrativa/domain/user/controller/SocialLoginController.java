@@ -97,26 +97,15 @@ public class SocialLoginController {
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
             
             // http, https 환경 동작
-            log.info("http, https 환경 cookie test 중입니다.");
+//            log.info("http, https 환경 cookie test 중입니다.");
 //            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
 
             // https 환경 동작
-//            log.info("https 환경 cookie test 중입니다.");
-//            String idCookie = String.format("id=%d; SameSite=Strict; Secure; HttpOnly; Path=/", dbId);
+            log.info("https 환경 cookie test 중입니다.");
+            String idCookie = String.format("id=%d; SameSite=Strict; Secure; HttpOnly; Path=/", dbId);
 
-//          // 쿠키 생성
-            Cookie cookie = new Cookie("id", String.valueOf(dbId));
-            cookie.setHttpOnly(true);  // 쿠키의 HttpOnly 속성을 설정 (보안 강화)
-            cookie.setSecure(true);    // HTTPS에서만 쿠키를 전송
-            cookie.setPath("/");       // 쿠키의 경로 설정
-            cookie.setMaxAge(60 * 60 * 24);  // 쿠키의 만료 시간 (예: 1일)
-
-            // 쿠키를 응답 헤더에 추가
-            response.addCookie(cookie);
-
-
-//            log.info("idCookie: {}", idCookie);
-//            response.setHeader("Set-Cookie", idCookie);
+            log.info("idCookie: {}", idCookie);
+            response.setHeader("Set-Cookie", idCookie);
 
             response.setStatus(HttpServletResponse.SC_CREATED);
         } catch (Exception e) {
