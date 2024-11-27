@@ -23,12 +23,13 @@ ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
+ARG S3_FILE_KEYY
 ARG S3_FILE_KEY_OVERRIDE
 
 # AWS 환경 변수 설정
 ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-ENV AWS_REGION=${AWS_REGION}
+ENV AWS_DEFAULT_REGION=${AWS_REGION}
 ENV S3_BUCKET_NAME=${S3_BUCKET_NAME}
 
 # 동적으로 설정 파일 키 결정
@@ -41,8 +42,8 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
     if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then \
         echo "ERROR: AWS_SECRET_ACCESS_KEY is not set!"; exit 1; \
     fi && \
-    if [ -z "${AWS_REGION}" ]; then \
-        echo "ERROR: AWS_REGION is not set!"; exit 1; \
+    if [ -z "${AWS_DEFAULT_REGION}" ]; then \
+        echo "ERROR: AWS_DEFAULT_REGION is not set!"; exit 1; \
     fi && \
     if [ -z "${S3_BUCKET_NAME}" ]; then \
         echo "ERROR: S3_BUCKET_NAME is not set!"; exit 1; \
@@ -51,21 +52,10 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
         echo "ERROR: FINAL_S3_FILE_KEY is not set!"; exit 1; \
     fi
 
-# amazon-ssm-agent 설치
-RUN apt-get update && \
-    apt-get install -y wget && \
-    wget https://s3.amazonaws.com/amazon-ssm-us-east-1/latest/debian_amd64/amazon-ssm-agent.deb && \
-    dpkg -i amazon-ssm-agent.deb && \
-    rm -f amazon-ssm-agent.deb && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# amazon-ssm-agent 시작 설정
-RUN service amazon-ssm-agent start
-
 # S3에서 설정 파일 다운로드
 RUN mkdir -p /app/config && \
     echo "Downloading configuration file: ${FINAL_S3_FILE_KEY}" && \
-    if ! aws s3 cp s3://${S3_BUCKET_NAME}/${FINAL_S3_FILE_KEY} /app/config/application.yml --region ${AWS_REGION}; then \
+    if ! aws s3 cp s3://${S3_BUCKET_NAME}/${FINAL_S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION}; then \
         echo "ERROR: Failed to download ${FINAL_S3_FILE_KEY} from S3"; exit 1; \
     fi
 
