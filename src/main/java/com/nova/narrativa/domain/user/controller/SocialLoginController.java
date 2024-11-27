@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -250,5 +251,12 @@ public class SocialLoginController {
         log.info("session: {}", session.getAttribute("socialLoginResult"));
         session.invalidate();  // 세션 무효화
         return ResponseEntity.ok().body("로그아웃 성공");
+    }
+
+    // Test
+    @GetMapping("/test")
+    public void test(RedirectAttributes rttr, HttpServletResponse response) throws IOException {
+        rttr.addFlashAttribute("id", "test");
+        response.sendRedirect("https://www.narrativa.kr/home");
     }
 }
