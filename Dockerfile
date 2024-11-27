@@ -23,7 +23,6 @@ ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
-ARG S3_FILE_KEYY
 ARG S3_FILE_KEY_OVERRIDE
 
 # AWS 환경 변수 설정
@@ -43,7 +42,7 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
         echo "ERROR: AWS_SECRET_ACCESS_KEY is not set!"; exit 1; \
     fi && \
     if [ -z "${AWS_REGION}" ]; then \
-        echo "ERROR: AWS_DEFAULT_REGION is not set!"; exit 1; \
+        echo "ERROR: AWS_REGION is not set!"; exit 1; \
     fi && \
     if [ -z "${S3_BUCKET_NAME}" ]; then \
         echo "ERROR: S3_BUCKET_NAME is not set!"; exit 1; \
@@ -52,17 +51,13 @@ RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
         echo "ERROR: FINAL_S3_FILE_KEY is not set!"; exit 1; \
     fi
 
-# amazon-ssm-agent 설치
+# amazon-ssm-agent 설치 (APT 사용)
 RUN apt-get update && \
-    apt-get install -y wget && \
-    wget https://s3.amazonaws.com/amazon-ssm-${AWS_REGION}/latest/debian_amd64/amazon-ssm-agent.deb && \
-    dpkg -i amazon-ssm-agent.deb && \
-    rm -f amazon-ssm-agent.deb && \
+    apt-get install -y amazon-ssm-agent && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # amazon-ssm-agent 시작 설정
-RUN systemctl enable amazon-ssm-agent && \
-    systemctl start amazon-ssm-agent
+RUN service amazon-ssm-agent start
 
 # S3에서 설정 파일 다운로드
 RUN mkdir -p /app/config && \
