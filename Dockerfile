@@ -32,6 +32,23 @@ ENV AWS_DEFAULT_REGION=${AWS_REGION}
 ENV S3_BUCKET_NAME=${S3_BUCKET_NAME}
 ENV S3_FILE_KEY=${S3_FILE_KEY}
 
+# 환경 변수 검증
+RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
+         echo "ERROR: AWS_ACCESS_KEY_ID is not set!"; exit 1; \
+       fi && \
+       if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then \
+         echo "ERROR: AWS_SECRET_ACCESS_KEY is not set!"; exit 1; \
+       fi && \
+       if [ -z "${AWS_DEFAULT_REGION}" ]; then \
+         echo "ERROR: AWS_DEFAULT_REGION is not set!"; exit 1; \
+       fi && \
+       if [ -z "${S3_BUCKET_NAME}" ]; then \
+         echo "ERROR: S3_BUCKET_NAME is not set!"; exit 1; \
+       fi && \
+       if [ -z "${S3_FILE_KEY}" ]; then \
+         echo "ERROR: S3_FILE_KEY is not set!"; exit 1; \
+       fi
+
 # S3에서 설정 파일 다운로드
 RUN mkdir -p /app/config && \
     echo "Downloading configuration file: ${S3_FILE_KEY}" && \
