@@ -99,7 +99,7 @@ public class SocialLoginController {
             
             // http, https 환경 동작
             log.info("http, https 환경 cookie test 중입니다.");
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=narrativa.kr; SameSite=None; Secure; Path=/", dbId);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
