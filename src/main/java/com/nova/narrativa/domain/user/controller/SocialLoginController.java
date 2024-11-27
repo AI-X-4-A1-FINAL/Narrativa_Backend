@@ -253,10 +253,23 @@ public class SocialLoginController {
         return ResponseEntity.ok().body("로그아웃 성공");
     }
 
-    // Test
     @GetMapping("/test")
-    public void test(RedirectAttributes rttr, HttpServletResponse response) throws IOException {
-        rttr.addFlashAttribute("id", "test");
-        response.sendRedirect("https://www.narrativa.kr/home");
+    public void test(HttpServletResponse response) throws IOException {
+        // 리다이렉트할 URL
+        String redirectUrl = "https://www.narrativa.kr";
+
+        // 클라이언트 측에서 sessionStorage 또는 localStorage에 데이터를 저장하도록 JavaScript 코드 삽입
+        String html = "<html>"
+                + "<body>"
+                + "<script type=\"text/javascript\">"
+                + "sessionStorage.setItem('id', 'test');"  // 데이터 저장
+                + "window.location.href = '" + redirectUrl + "';"  // 리다이렉트
+                + "</script>"
+                + "</body>"
+                + "</html>";
+
+        // HTML 페이지로 리턴하여 클라이언트에서 처리
+        response.setContentType("text/html");
+        response.getWriter().write(html);
     }
 }
