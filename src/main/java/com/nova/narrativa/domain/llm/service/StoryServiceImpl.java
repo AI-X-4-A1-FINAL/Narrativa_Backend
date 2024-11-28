@@ -31,107 +31,29 @@ import java.util.*;
 @Service
 public class StoryServiceImpl implements StoryService {
 
-    private final S3Client s3Client;
     private final RestTemplate restTemplate;
     private static final Logger logger = LoggerFactory.getLogger(StoryServiceImpl.class);
 
     @Value("${ml.url}")
     private String fastApiUrl;
 
-    @Value("${aws.s3.prompt-name}")
-    private String bucketName;
-
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
 
     @Autowired
-    public StoryServiceImpl(RestTemplate restTemplate, S3Client s3Client) {
+    public StoryServiceImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-        this.s3Client = s3Client;
     }
 
-    // 로컬에서 지정한 파일 읽기
-    private String readPromptFromLocalFile(String filePath) {
-        try {
-            Path file = Paths.get(filePath); // 지정된 경로에서 파일 읽기
-            if (!Files.exists(file)) {
-                throw new RuntimeException("파일이 존재하지 않습니다: " + filePath);
-            }
-
-            // 파일 내용 읽기
-            return Files.readString(file, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            logger.error("로컬 파일 읽기 실패: ", e);
-            throw new RuntimeException("로컬 프롬프트 파일 읽기 실패: " + e.getMessage());
-        }
-    }
-
-    // genre에 맞는 프롬프트 파일 불러오기 (랜덤 파일)
-    private String readRandomPromptFromFileByGenre(String genre, List<String> tags) {
-        String folderKey = genre + "/"; // 예: "Survival/" 또는 "Romance/"
-
-        try {
-            // S3에서 파일 목록을 가져오기
-            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                    .bucket(bucketName)
-                    .prefix(folderKey)  // 해당 genre 폴더 안의 파일들만 가져옴
-                    .build();
-
-            ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
-            List<String> fileKeys = new ArrayList<>();
-
-            // 파일 목록을 수집
-            listResponse.contents().forEach(s3Object -> fileKeys.add(s3Object.key()));
-
-            if (fileKeys.isEmpty()) {
-                throw new RuntimeException("해당 폴더에 파일이 없습니다.");
-            }
-
-            // 파일 목록에서 랜덤으로 파일 선택
-            Random random = new Random();
-            String randomFileKey = fileKeys.get(random.nextInt(fileKeys.size())); // 랜덤 파일 선택
-
-            // 선택된 파일 읽기
-            InputStream inputStream = s3Client.getObject(
-                    GetObjectRequest.builder()
-                            .bucket(bucketName)
-                            .key(randomFileKey)
-                            .build(),
-                    ResponseTransformer.toInputStream()
-            );
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            StringBuilder fileContent = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                fileContent.append(line).append("\n");
-            }
-            return fileContent.toString();
-        } catch (SdkException | IOException e) {
-            logger.error("S3에서 파일 읽기 실패: ", e);
-            throw new RuntimeException("프롬프트 파일 읽기 실패: " + e.getMessage());
-        }
-    }
-
+    // FastAPI로 전달할 데이터 생성 및 스토리 시작
     @Override
     public String startGame(String genre, List<String> tags) {
-
         // FastAPI로 전달할 데이터 생성
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("tags", tags);
 
-        // 로컬에서 직접 지정된 파일 경로 읽기
-        // 이거 사용할 땐 아래 S3에서 프롬프트 불러오는 코드 주석처리하고 사용하세요
-//        String promptFilePath = "src/main/java/com/nova/narrativa/domain/llm/prompt/" + genre + "/넣고싶은 프롬프트 제목.txt";  // 예시: "zombi.txt"
-//        String prompt = readPromptFromLocalFile(promptFilePath);  // 지정된 경로의 파일 읽기
-
-        // S3에서 프롬프트 불러오기
-        // 위에 직접 프롬프트 불러올 거면 이거 한줄만 주석하세요
-        String prompt = readRandomPromptFromFileByGenre(genre,tags);
-        // 이 아래는 주석하면 안되요.
-        requestPayload.put("prompt", prompt);
-
         try {
+            // FastAPI로 스토리 생성 요청
             ResponseEntity<String> response = restTemplate.postForEntity(fastApiUrl + "/api/story/start", requestPayload, String.class);
             return response.getBody();
         } catch (Exception e) {
@@ -139,18 +61,23 @@ public class StoryServiceImpl implements StoryService {
         }
     }
 
+    // 스토리 이어가기 (대화 내용 포함)
     @Override
-    public String continueStory(int currentStage, String genre, String initialStory, String previousStory, String userInput ) {
-        // 이전 대화 내용을 업데이트
+    public String continueStory(String genre, int currentStage, String initialStory, String userInput, String previousStory, String conversationHistory) {
         String previousUserInput = previousUserInputMap.getOrDefault(currentStage, "");
 
-        // FastAPI로 전달할 데이터 생성
+        // conversationHistory가 빈 배열로 설정 (null이 아닌 빈 배열을 전달)
+        if (conversationHistory == null || conversationHistory.isEmpty()) {
+            conversationHistory = "[]";  // 빈 배열을 문자열로 설정
+        }
+
         Map<String, Object> requestPayload = new HashMap<>();
-        requestPayload.put("currentStage", currentStage);  // 현재 스테이지 값 설정
-        requestPayload.put("genre", genre);  // 장르값 설정
-        requestPayload.put("initialStory", initialStory);  // 초기 스토리 값 설정
-        requestPayload.put("previousUserInput", previousUserInput);  // 이전 사용자 입력값 설정
-        requestPayload.put("userInput", userInput);  // 유저의 입력값 설정
+        requestPayload.put("genre", genre);
+        requestPayload.put("currentStage", currentStage);
+        requestPayload.put("initialStory", initialStory);
+        requestPayload.put("userInput", userInput);
+        requestPayload.put("previousUserInput", previousUserInput);
+        requestPayload.put("conversationHistory", conversationHistory);  // 빈 배열이 아닌 null로 처리
 
         // 이전 입력 저장
         previousUserInputMap.put(currentStage, userInput);
@@ -178,5 +105,5 @@ public class StoryServiceImpl implements StoryService {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
         }
     }
-
 }
+
