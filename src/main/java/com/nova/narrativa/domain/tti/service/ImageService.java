@@ -150,7 +150,7 @@ public class ImageService {
                     byte[].class
             );
 
-            byte[] imageBytes = response.getBody(); //받아온 이미지
+            byte[] imageBytes = response.getBody(); //바이트 배열로 받아온 이미지
 
             if (imageBytes == null || imageBytes.length == 0) {
                 throw new RuntimeException("Received empty image from FastAPI");
@@ -158,6 +158,7 @@ public class ImageService {
 
             // Convert image bytes to Base64 string
             String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+            System.out.println(base64Image);
 
             // Return the Base64 image string in the response body
             return ResponseEntity.ok(base64Image); // 이곳에서 base64 문자열 반환
