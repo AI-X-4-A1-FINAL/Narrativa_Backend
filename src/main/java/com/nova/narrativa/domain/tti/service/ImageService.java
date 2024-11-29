@@ -44,7 +44,7 @@ public class ImageService {
     @Value("${ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
 
-    @Value("${aws.s3.images-storage-buckets}")
+    @Value("${aws.s3.images-bucket}")
     private String bucketName;
 
     // Get a list of image files from S3 bucket

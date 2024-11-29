@@ -36,7 +36,7 @@ public class S3ImageService {
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
 
-    @Value("${aws.s3.images-storage-buckets}")
+    @Value("${aws.s3.images-bucket}")
     private String bucketName;
 
     @Value("${aws.s3.profile-img-dir:profile}")
