@@ -5,10 +5,9 @@ import lombok.Data;
 
 @Builder
 @Data
-public class GoogleLoginResult {
+public class SocialLoginResult {
 
-    private Long id;
+    private String id;
     private String nickname;
     private String profile_image_url;
-    private String email;
 }

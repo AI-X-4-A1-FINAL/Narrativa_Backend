@@ -1,0 +1,41 @@
+{
+  "family": "narrativa-backend-task",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "narrativa-backnd-container",
+      "image": "${IMAGE_URI}",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SPRING_CONFIG_LOCATION",
+          "value": "/app/config/application.yml"
+        },
+        {
+          "name": "TZ",
+          "value": "Asia/Seoul"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/narrativa_backend",
+          "awslogs-region": "ap-northeast-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::533267329278:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::533267329278:role/narrativaTaskRole"
+}

@@ -39,6 +39,7 @@ public class User {
     private String username;
 
     @Column(columnDefinition = "longtext")
+
     private String profile_url;
 
     @Enumerated(EnumType.STRING)

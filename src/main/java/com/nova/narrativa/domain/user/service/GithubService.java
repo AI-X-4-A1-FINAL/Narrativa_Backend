@@ -1,7 +1,7 @@
 package com.nova.narrativa.domain.user.service;
 
 import com.nova.narrativa.domain.user.api.GithubApi;
-import com.nova.narrativa.domain.user.dto.GithubLoginResult;
+import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,14 +13,14 @@ public class GithubService {
 
     private final GithubApi githubApi;
 
-    public GithubLoginResult githubLogin(String AuthCode) throws Exception {
+    public SocialLoginResult login(String authCode) throws Exception {
 
         // 2. 토큰 받기
-        String accessToken = githubApi.getUserInfo(AuthCode);
+        String accessToken = githubApi.getUserInfo(authCode);
         log.info("accessToken = {}", accessToken);
 
         // 3. 사용자 정보 받기
-        GithubLoginResult userInfoWithToken = githubApi.getUserInfoWithToken(accessToken);
+        SocialLoginResult userInfoWithToken = githubApi.getUserInfoWithToken(accessToken);
         log.info("userInfoWithToken = {}", userInfoWithToken);
 
         return userInfoWithToken;

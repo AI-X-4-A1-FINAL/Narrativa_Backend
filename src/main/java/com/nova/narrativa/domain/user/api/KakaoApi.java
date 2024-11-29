@@ -2,7 +2,7 @@ package com.nova.narrativa.domain.user.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nova.narrativa.common.util.JsonParse;
-import com.nova.narrativa.domain.user.dto.KakaoLoginResult;
+import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -67,7 +67,7 @@ public class KakaoApi {
         return accessToken;
     }
 
-    public KakaoLoginResult getUserInfoWithToken(String accessToken) throws Exception {
+    public SocialLoginResult getUserInfoWithToken(String accessToken) throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
@@ -86,24 +86,14 @@ public class KakaoApi {
         log.info("jsonObject = {}", jsonObject);
 
         // "id"를 가져오기 (long으로 반환)
-        long id = jsonObject.get("id").asLong();
+        String id = jsonObject.get("id").asText();
 
         // "properties" 객체에서 "nickname"과 "profile_image" 추출
         JsonNode propertiesNode = jsonObject.get("properties");
         String nickname = propertiesNode.get("nickname").asText();
         String profile = propertiesNode.get("profile_image").asText();
 
-
-//        Member member = new Member();
-//        member.setMember_id(id);
-//        member.setUsername(nickname);
-//
-//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-//
-//        HttpSession session = request.getSession();
-//        session.setAttribute("member", member);
-
-        return KakaoLoginResult.builder()
+        return SocialLoginResult.builder()
                 .id(id)
                 .nickname(nickname)
                 .profile_image_url(profile)

@@ -5,9 +5,9 @@ import lombok.Data;
 
 @Builder
 @Data
-public class KakaoLoginResult {
+public class UserProfileInfo {
 
-    private long id;
     private String nickname;
-    private String profile_image_url;
+    private String status;
+    private String profile_url;
 }

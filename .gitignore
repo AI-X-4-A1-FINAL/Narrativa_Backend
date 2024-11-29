@@ -227,13 +227,17 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij,java,gradle
+.env
+S3Config.java
 
-application.yml
-application-local.yml
-application-deploy.yml
-application-development.yml
+# End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij,java,gradle
+src/main/resources/application.yml
+src/main/resources/application-local.yml
+src/main/resources/application-deploy.yml
+src/main/resources/application-development.yml
 
 config
 
 .env
+
+
