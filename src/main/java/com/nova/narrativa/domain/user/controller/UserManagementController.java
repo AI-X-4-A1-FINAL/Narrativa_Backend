@@ -7,6 +7,7 @@ import com.nova.narrativa.domain.user.service.UserManagementService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +16,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RequiredArgsConstructor
 public class UserManagementController {
+
     private final UserManagementService userService;
 
+    // application.yml의 narrativa-admin URL 값 주입
+    @Value("${environments.narrativa-admin.url}")
+    private String narrativaAdminUrl;
+
+    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     @GetMapping
     public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -35,6 +41,7 @@ public class UserManagementController {
         }
     }
 
+    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     @PatchMapping("/{id}/role")
     public ResponseEntity<UserDTO> updateUserRole(
             @PathVariable Long id,
@@ -55,6 +62,7 @@ public class UserManagementController {
         }
     }
 
+    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     @PatchMapping("/{id}/status")
     public ResponseEntity<UserDTO> updateUserStatus(
             @PathVariable Long id,
