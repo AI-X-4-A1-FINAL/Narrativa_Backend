@@ -240,5 +240,5 @@ config
 
 # .env 파일 무시
 src/main/resources/.env
-
+/config/.env
 
