@@ -44,13 +44,13 @@ public class SignController {
     }
 
     // 회원탈퇴
-    @PutMapping("/users/{userId}/deactivate")
-    public ResponseEntity<String> deactivate(@PathVariable Long userId) {
-        log.info("Deactivate user: {}", userId);
+    @PutMapping("/users/deactivate")
+    public ResponseEntity<String> deactivate(@CookieValue Long id) {
+        log.info("Deactivate user: {}", id);
 
         // TODO: 회원의 경우 본인 userId인 경우만 탈퇴 가능, 어드민의 경우 상관없이 가능
 
-        String loggedInUserResult = signUpService.isLoggedInUser(userId);
+        String loggedInUserResult = signUpService.isLoggedInUser(id);
         if (loggedInUserResult == null) {
             return ResponseEntity.status(403).body("Unauthorized: 로그인한 유저의 ID가 아닙니다.");
         } else {
@@ -59,11 +59,11 @@ public class SignController {
     }
 
     // 회원 정보 전체 조회
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<UserProfileInfo> getUser(@PathVariable Long userId) {
-        log.info("userId: {}", userId);
+    @GetMapping("/users")
+    public ResponseEntity<UserProfileInfo> getUser(@CookieValue Long id) {
+        log.info("getUser id: {}", id);
 
-        Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
+        Optional<User> userInfo = signUpService.getUserProfileInfo(id);
         // 회원 정보가 존재 (회원 타입 상태 상관없이 조회처리)
         if (userInfo.isPresent()) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
@@ -78,11 +78,11 @@ public class SignController {
     }
 
     // 회원 정보 상태 조회
-    @GetMapping("/users/{userId}/status")
-    public ResponseEntity<UserProfileInfo> getUserStatus(@PathVariable Long userId) {
-        log.info("userId: {}", userId);
+    @GetMapping("/users/status")
+    public ResponseEntity<UserProfileInfo> getUserStatus(@CookieValue Long id) {
+        log.info("getUserStatus id: {}", id);
 
-        Optional<User> userInfo = signUpService.getUserProfileInfo(userId);
+        Optional<User> userInfo = signUpService.getUserProfileInfo(id);
         // 회원 정보가 존재 (회원 타입 상태 상관없이 조회처리)
         if (userInfo.isPresent()) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
@@ -95,10 +95,21 @@ public class SignController {
     }
 
     // 회원정보 업데이트
-    @PutMapping("/users/{userId}")
-    public ResponseEntity<Object> updateUser(@PathVariable Long userId, @RequestBody UserProfileInfo userProfileInfo) {
+    @PutMapping("/users")
+    public ResponseEntity<Object> updateUser(@CookieValue Long id, @RequestBody UserProfileInfo userProfileInfo) {
         log.info("userProfileInfo: {}", userProfileInfo);
 
-        return signUpService.updateUser(userId, userProfileInfo);
+        return signUpService.updateUser(id, userProfileInfo);
+    }
+
+    // 유저ID로 조회한 유저가 ACTIVE 상태인지 조회
+    @GetMapping("/checkUserStatus")
+    public ResponseEntity<String> checkUserStatus(@CookieValue Long id) {
+        try {
+            boolean isActive = signUpService.isUserActive(id);
+            return new ResponseEntity<>(isActive ? HttpStatus.OK : HttpStatus.FORBIDDEN);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
 }
