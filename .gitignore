@@ -238,6 +238,7 @@ src/main/resources/application-development.yml
 
 config
 
-.env
+# .env 파일 무시
+src/main/resources/.env
 
 

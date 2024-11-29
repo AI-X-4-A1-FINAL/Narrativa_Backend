@@ -38,9 +38,9 @@ public class SocialLoginController {
                                  GoogleService googleService,
                                  GithubService githubService,
                                  SignUpService signUpService,
-                                 @Value("${front.url}") String frontUrl,
-                                 @Value("${front.signup-part}") String frontSignupPart,
-                                 @Value("${server.url}") String serverUrl) {
+                                 @Value("${environments.narrativa-front.url}") String frontUrl,
+                                 @Value("${environments.narrativa-front.signup-part}") String frontSignupPart,
+                                 @Value("${environments.server.url}") String serverUrl) {
 
         this.kakaoService = kakaoService;
         this.googleService = googleService;

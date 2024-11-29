@@ -47,7 +47,7 @@ public class ImageService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${ml.url}")
+    @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
 
     @Value("${aws.s3.images-bucket}")
