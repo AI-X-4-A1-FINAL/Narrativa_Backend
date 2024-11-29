@@ -2,12 +2,15 @@ package com.nova.narrativa.domain.tti.service;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -23,8 +26,10 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+
+import java.io.*;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 
@@ -40,12 +45,14 @@ public class ImageService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
 
     @Value("${aws.s3.images-storage-buckets}")
     private String bucketName;
+
 
     // Get a list of image files from S3 bucket
     public List<String> getImageFiles() {
@@ -72,7 +79,7 @@ public class ImageService {
     // Generate a presigned URL for accessing an image file
     public String generatePresignedUrl(String key) {
         var presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(10))
+                .signatureDuration(Duration.ofMinutes(60))
                 .getObjectRequest(getRequest -> getRequest.bucket(bucketName).key(key))
                 .build();
 
@@ -135,14 +142,13 @@ public class ImageService {
                 "n", n
         );
 
-        // Set up HTTP headers (application/json)
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
         try {
-            // Send POST request to FastAPI
+            // Send POST request to FastAPI to generate the image
             ResponseEntity<byte[]> response = restTemplate.exchange(
                     generateImageUrl,
                     HttpMethod.POST,
@@ -150,25 +156,55 @@ public class ImageService {
                     byte[].class
             );
 
-            byte[] imageBytes = response.getBody(); //받아온 이미지
-
-            if (imageBytes == null || imageBytes.length == 0) {
-                throw new RuntimeException("Received empty image from FastAPI");
+            byte[] responseData = response.getBody(); // JSON 데이터를 바이트 배열로 반환
+            if (responseData == null || responseData.length == 0) {
+                throw new RuntimeException("Received empty response from FastAPI");
             }
 
-            // Convert image bytes to Base64 string
-            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+            // JSON 바이트 배열을 문자열로 변환
+            String jsonString = new String(responseData, StandardCharsets.UTF_8);
+            //System.out.println("Received JSON: " + jsonString);
 
-            // Return the Base64 image string in the response body
-            return ResponseEntity.ok(base64Image); // 이곳에서 base64 문자열 반환
+            // JSON 파싱
+            JsonNode jsonNode = objectMapper.readTree(jsonString);
+            String imageUrl = jsonNode.get("imageUrl").asText();
+            System.out.println("Image URL: " + imageUrl);
+
+            // JSON 데이터를 S3에 저장
+            String s3Key = uploadJsonToS3(jsonString);
+
+            return ResponseEntity.ok(imageUrl);
 
         } catch (Exception e) {
-            // Handle exceptions (e.g., FastAPI request failure)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to generate image: " + e.getMessage());
+                    .body("Failed to process request: " + e.getMessage());
+        }
+    }
+
+    private String uploadJsonToS3(String jsonString) {
+        try {
+            // S3 파일 이름 생성
+            String fileName = "json-data/" + UUID.randomUUID() + ".json";
+
+            // S3에 업로드 요청 생성
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileName)
+                    .contentType("application/json")
+                    .build();
+
+            // S3 클라이언트를 통해 JSON 문자열 업로드
+            S3Client s3Client = S3Client.create();
+            s3Client.putObject(putObjectRequest, RequestBody.fromString(jsonString));
+
+            System.out.println("Uploaded JSON to S3 with key: " + fileName);
+            return fileName;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload JSON to S3", e);
         }
     }
 }
+
 
 
 
