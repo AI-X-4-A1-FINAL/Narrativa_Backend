@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 
@@ -105,6 +106,21 @@ public class SignUpService {
         userRepository.save(existingUser);
         return ResponseEntity.ok(existingUser);
     }
+
+    public boolean isUserActive(Long userId) {
+        // userId가 유효한지 체크
+        if (StringUtils.isEmpty(userId)) {
+            throw new IllegalArgumentException("유저 ID가 비어있습니다.");
+        }
+
+        // userId로 유저를 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException(String.format("유저아이디가 %d 인 유저는 존재하지 않습니다.", userId)));
+
+        // 유저의 상태가 ACTIVE인지 확인
+        return user.getStatus() == User.Status.ACTIVE;// ACTIVE 상태면 true 반환
+    }
+
 
     public boolean isUserExist(UserExistenceDto userExistenceDto) {
         log.info("userExistenceDto.getUserId(): {}", userExistenceDto.getUserId());
