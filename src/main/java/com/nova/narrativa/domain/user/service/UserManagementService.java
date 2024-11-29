@@ -34,8 +34,8 @@ public class UserManagementService {
             return null;
         };
 
-        return userRepository.findAll(spec, pageRequest)
-                .map(this::convertToDTO);
+        Page<User> userPage = userRepository.findAll(spec, pageRequest);
+        return userPage.map(user -> convertToDTO(user));
     }
 
     public UserDTO updateRole(Long id, User.Role role) {
