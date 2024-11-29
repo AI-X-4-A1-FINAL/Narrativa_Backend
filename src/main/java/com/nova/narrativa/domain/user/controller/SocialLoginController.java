@@ -5,14 +5,18 @@ import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import com.nova.narrativa.domain.user.dto.UserExistenceDto;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.*;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.util.Optional;
 
 @RequestMapping("/login")
@@ -28,13 +32,15 @@ public class SocialLoginController {
     private final String frontUrl;
     private final String frontSignupPart;
     private final String redirectUrl;
+    private final String serverDomainUrl;
 
     public SocialLoginController(KakaoService kakaoService,
                                  GoogleService googleService,
                                  GithubService githubService,
                                  SignUpService signUpService,
                                  @Value("${front.url}") String frontUrl,
-                                 @Value("${front.signup-part}") String frontSignupPart) {
+                                 @Value("${front.signup-part}") String frontSignupPart,
+                                 @Value("${server.url}") String serverUrl) {
 
         this.kakaoService = kakaoService;
         this.googleService = googleService;
@@ -43,6 +49,8 @@ public class SocialLoginController {
         this.frontUrl = frontUrl;
         this.frontSignupPart = frontSignupPart;
         this.redirectUrl = frontUrl + frontSignupPart;
+        this.serverDomainUrl = getDomainFromUrl(serverUrl);
+        log.info("serverDomainUrl: {}", serverDomainUrl);
     }
 
     @GetMapping("/kakao")
@@ -61,6 +69,7 @@ public class SocialLoginController {
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
+                log.info("해당 유저가 존재합니다.");
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
@@ -93,7 +102,7 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -154,7 +163,7 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -215,7 +224,7 @@ public class SocialLoginController {
             log.info("dbId = {}", dbId);
 
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; SameSite=None; Secure; Path=/", dbId);
+            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -245,5 +254,25 @@ public class SocialLoginController {
         log.info("session: {}", session.getAttribute("socialLoginResult"));
         session.invalidate();  // 세션 무효화
         return ResponseEntity.ok().body("로그아웃 성공");
+    }
+
+    private String getDomainFromUrl(String urlString) {
+        try {
+            // URI 객체를 생성하고, toURL()을 사용하여 URL 객체를 생성
+            URI uri = new URI(urlString);
+            URL url = uri.toURL();
+
+            // 호스트명 추출
+            String host = url.getHost();
+
+            // 도메인 부분만 추출 (상위 도메인 + 최상위 도메인)
+            String[] domainParts = host.split("\\.");
+
+            // 최상위 도메인 + 두 번째 레벨 도메인만 반환 (예: test.kr)
+            return domainParts.length >= 2 ? domainParts[domainParts.length - 2] + "." + domainParts[domainParts.length - 1] : host;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // 예외 처리
+        }
     }
 }

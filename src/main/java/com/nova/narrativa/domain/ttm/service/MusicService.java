@@ -26,7 +26,7 @@ public class MusicService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${aws.s3.bucket-name}")
+    @Value("${aws.s3.music-bucket}")
     private String bucketName;
 
 

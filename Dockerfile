@@ -1,61 +1,69 @@
-# 기본 이미지
-FROM amazoncorretto:21-alpine as builder
+# 1단계: 빌드 이미지
+FROM gradle:8.4.0-jdk21 AS builder
 
-# AWS CLI 설치
-RUN apk add --no-cache curl unzip bash && \
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli && \
-    rm -rf awscliv2.zip aws
+WORKDIR /app
+COPY . ./
+RUN gradle clean build -x test
 
-# AWS CLI 설치 확인
-RUN echo "PATH=$PATH" && which aws && aws --version
+# 2단계: 실행 이미지
+FROM openjdk:21-slim
 
-# 빌드 환경 설정
 WORKDIR /app
 
-# 소스 복사
-COPY . /app
+# AWS CLI 설치
+RUN apt-get update && \
+    apt-get install -y curl unzip && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && ./aws/install && \
+    rm -rf awscliv2.zip ./aws && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Docker Compose로 전달받은 빌드 인수
+# 빌드 시 전달받을 환경 변수
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG S3_BUCKET_NAME
 ARG S3_FILE_KEY
 
-# 환경 변수로 설정
-ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-ENV AWS_REGION=$AWS_REGION
-ENV S3_BUCKET_NAME=$S3_BUCKET_NAME
-ENV S3_FILE_KEY=$S3_FILE_KEY
+# 환경 변수 설정
+ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+ENV AWS_DEFAULT_REGION=${AWS_REGION}
+ENV S3_BUCKET_NAME=${S3_BUCKET_NAME}
+ENV S3_FILE_KEY=${S3_FILE_KEY}
 
-# S3에서 application.yml 다운로드
-RUN if [ -n "$S3_BUCKET_NAME" ] && [ -n "$S3_FILE_KEY" ]; then \
-        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
-        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
-        aws configure set region $AWS_REGION && \
-        mkdir -p src/main/resources && \
-        aws s3 cp s3://$S3_BUCKET_NAME/$S3_FILE_KEY src/main/resources/application.yml; \
-    else \
-        echo "S3_BUCKET_NAME or S3_FILE_KEY is not set, skipping S3 download."; \
+# 환경 변수 검증
+RUN if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
+         echo "ERROR: AWS_ACCESS_KEY_ID is not set!"; exit 1; \
+       fi && \
+       if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then \
+         echo "ERROR: AWS_SECRET_ACCESS_KEY is not set!"; exit 1; \
+       fi && \
+       if [ -z "${AWS_DEFAULT_REGION}" ]; then \
+         echo "ERROR: AWS_DEFAULT_REGION is not set!"; exit 1; \
+       fi && \
+       if [ -z "${S3_BUCKET_NAME}" ]; then \
+         echo "ERROR: S3_BUCKET_NAME is not set!"; exit 1; \
+       fi && \
+       if [ -z "${S3_FILE_KEY}" ]; then \
+         echo "ERROR: S3_FILE_KEY is not set!"; exit 1; \
+       fi
+
+# S3에서 설정 파일 다운로드
+RUN mkdir -p /app/config && \
+    echo "Downloading configuration file: ${S3_FILE_KEY}" && \
+    if ! aws s3 cp s3://${S3_BUCKET_NAME}/${S3_FILE_KEY} /app/config/application.yml --region ${AWS_DEFAULT_REGION}; then \
+        echo "ERROR: Failed to download ${S3_FILE_KEY} from S3"; exit 1; \
     fi
 
-# Gradle 빌드
-RUN ./gradlew clean build -x test
+# 빌드된 JAR 파일 복사
+COPY --from=builder /app/build/libs/*.jar /app/app.jar
 
-# 실행 이미지 준비
-FROM amazoncorretto:21-alpine
+# Spring Boot가 application.yml을 인식하도록 설정
+ENV SPRING_CONFIG_LOCATION=/app/config/application.yml
 
-# 작업 디렉토리 설정
-WORKDIR /app
+# 기본 포트 설정
+EXPOSE 8080
 
-# 빌드 결과 복사
-COPY --from=builder /app/build/libs/*.jar app.jar
-
-# 로그 디렉토리 생성
-VOLUME /app/logs
-
-# 컨테이너 실행 시 기본 명령
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# 실행 명령어
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

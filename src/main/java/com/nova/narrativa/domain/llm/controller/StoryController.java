@@ -32,19 +32,25 @@ public class StoryController {
     @PostMapping("/chat")
     public ResponseEntity<String> continueStory(@RequestBody ChatRequest request) {
         try {
+            // List<String>을 String으로 변환
+            String conversationHistory = String.join("\n", request.getConversationHistory());
+
+            // 이전 사용자 입력이 null일 경우 빈 문자열로 설정
+            String previousUserInput = request.getPreviousUserInput() == null ? "" : request.getPreviousUserInput();
+
             String storyResponse = storyService.continueStory(
-            // 순서 바뀌면 안됩니다. 전달될 때 값이 잘못들어가서 답도 이상하게 나와요.
-                    request.getCurrentStage(),
                     request.getGenre(),
+                    request.getCurrentStage(),
                     request.getInitialStory(),
+                    request.getUserInput(),
                     request.getPreviousUserInput(),
-                    request.getUserInput()
+                    conversationHistory
             );
+
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
     }
-
 
 }

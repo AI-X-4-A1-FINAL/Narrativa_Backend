@@ -1,5 +1,6 @@
 package com.nova.narrativa.common.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -13,7 +14,8 @@ import java.util.Properties;
 public class S3PropertySourceLoader implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
 
     private final S3Client s3Client;
-    private final String bucketName = "narrativa-backend-yml";
+    @Value("${aws.s3.buket-yml}")
+    private String bucketName;
 
     public S3PropertySourceLoader(S3Client s3Client) {
         this.s3Client = s3Client;
