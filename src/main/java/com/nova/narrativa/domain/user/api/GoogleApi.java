@@ -18,13 +18,13 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class GoogleApi {
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    @Value(value = "${spring.security.oauth2.registration.google.client-id}")
     private String GOOGLE_CLIENT_ID;
 
-    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    @Value("${spring.security.oauth2.registration.google.client-secret}")
     private String GOOGLE_CLIENT_SECRET;
 
-    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    @Value("${spring.security.oauth2.registration.google.redirect-uri}")
     private String GOOGLE_REDIRECT_URL;
 
     private final static String GOOGLE_AUTH_URI = "https://oauth2.googleapis.com";
