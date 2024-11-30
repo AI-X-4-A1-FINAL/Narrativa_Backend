@@ -21,13 +21,13 @@ import java.util.Map;
 @Component
 public class GithubApi {
 
-    @Value("${spring.security.oauth2.client.registration.github.client-id}")
+    @Value("${spring.security.oauth2.registration.github.client-id}")
     private String GITHUB_CLIENT_ID;
 
-    @Value("${spring.security.oauth2.client.registration.github.client-secret}")
+    @Value("${spring.security.oauth2.registration.github.client-secret}")
     private String GITHUB_CLIENT_SECRET;
 
-    @Value("${spring.security.oauth2.client.registration.github.redirect-uri}")
+    @Value("${spring.security.oauth2.registration.github.redirect-uri}")
     private String GITHUB_REDIRECT_URL;
 
     private final static String GITHUB_AUTH_URI = "https://github.com";

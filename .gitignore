@@ -242,3 +242,6 @@ config
 src/main/resources/.env
 /config/.env
 
+*.tmp
+$Recycle.Bin/
+

@@ -1,0 +1,4 @@
+*.log
+*.tmp
+$Recycle.Bin/
+Thumbs.db
