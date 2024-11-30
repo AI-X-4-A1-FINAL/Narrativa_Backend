@@ -19,7 +19,6 @@ public class CorsConfig implements WebMvcConfigurer {
     private String adminUrl;
 
     @Value("${environments.narrativa-ml.url}")
-
     private String mlUrl;
 
     @Override
