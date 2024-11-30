@@ -18,13 +18,13 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class KakaoApi {
 
-    @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
+    @Value("${spring.security.oauth2.registration.kakao.client-id}")
     private String KAKAO_CLIENT_ID;
 
-    @Value("${spring.security.oauth2.client.registration.kakao.client-secret}")
+    @Value("${spring.security.oauth2.registration.kakao.client-secret}")
     private String KAKAO_CLIENT_SECRET;
 
-    @Value("${spring.security.oauth2.client.registration.kakao.redirect-uri}")
+    @Value("${spring.security.oauth2.registration.kakao.redirect-uri}")
     private String KAKAO_REDIRECT_URL;
 
     private final static String KAKAO_AUTH_URI = "https://kauth.kakao.com";

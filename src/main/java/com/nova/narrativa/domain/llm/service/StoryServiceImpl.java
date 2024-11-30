@@ -34,7 +34,7 @@ public class StoryServiceImpl implements StoryService {
     private final RestTemplate restTemplate;
     private static final Logger logger = LoggerFactory.getLogger(StoryServiceImpl.class);
 
-    @Value("${ml.url}")
+    @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;
 
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
