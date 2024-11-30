@@ -36,6 +36,9 @@ RUN mkdir -p /app/resources && \
     aws s3 cp s3://${S3_BUCKET_NAME}/${S3_YML_KEY} /app/resources/application.yml --region ${AWS_REGION} || \
     (echo "ERROR: Failed to download application.yml from S3" && exit 1)
 
+# 환경 변수 설정
+ENV SPRING_CONFIG_LOCATION=/app/resources/application.yml
+
 # 빌드된 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar /app/app.jar
 
