@@ -25,7 +25,6 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"stories", "userGames"})
 public class User {
 
     @Id

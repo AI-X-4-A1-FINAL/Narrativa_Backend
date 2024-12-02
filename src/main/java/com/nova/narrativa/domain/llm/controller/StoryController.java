@@ -64,7 +64,7 @@ public class StoryController {
             gameEntity.setGenre(request.getGenre());
             gameEntity.setCurrentStage(request.getCurrentStage());
             gameEntity.setInitialStory(request.getInitialStory());
-            gameEntity.setUserSelect(request.getUserInput());
+            gameEntity.setUserSelect(request.getUserSelect());
             gameEntity.setPreviousUserInput(previousUserInput);
             gameEntity.setConversationHistory(request.getConversationHistory());
 

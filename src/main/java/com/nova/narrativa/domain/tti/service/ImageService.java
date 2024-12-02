@@ -7,7 +7,7 @@ import com.nova.narrativa.common.exception.NoImageFileFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -28,11 +28,10 @@ import java.util.UUID;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.logging.Logger;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ImageService {
 
     private final S3Client s3Client;
@@ -50,9 +49,9 @@ public class ImageService {
     private String bucketName;
 
 
-    // Get a list of image files from S3 bucket
+
     public List<String> getImageFiles() {
-        // List all image files from the S3 bucket
+
         var request = ListObjectsV2Request.builder()
                 .bucket(bucketName)
                 .prefix("survival_images/")
@@ -94,39 +93,6 @@ public class ImageService {
         return generatePresignedUrl(randomImageFile);
     }
 
-//    // Generate an image from FastAPI
-//    public byte[] generateImage(String prompt, String size, int n) {
-//        String generateImageUrl = fastApiUrl + "/api/images/generate-image";
-//
-//        // Create payload for FastAPI
-//        Map<String, Object> requestPayload = Map.of(
-//                "prompt", prompt,
-//                "size", size,
-//                "n", n
-//        );
-//
-//        // Set up HTTP headers (application/json)
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
-//
-//        try {
-//            // Send POST request to FastAPI
-//            ResponseEntity<byte[]> response = restTemplate.exchange(
-//                    generateImageUrl,
-//                    HttpMethod.POST,
-//                    entity,
-//                    byte[].class
-//            );
-//
-//            // Return generated image
-//            return response.getBody();
-//        } catch (Exception e) {
-//            // Throw exception with specific error message
-//            throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
-//        }
-//    }
 
     public ResponseEntity<String> generateImage(String prompt, String size, int n) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
@@ -195,39 +161,3 @@ public class ImageService {
         }
     }
 }
-
-
-
-
-//            // Generate a unique image name (e.g., based on timestamp or UUID)
-//            String imageName = UUID.randomUUID().toString() + ".jpg";
-//
-//            // Upload image to S3 and get the URL
-//            return uploadImageToS3(imageBytes, imageName);
-//        } catch (Exception e) {
-//            // Throw exception with specific error message
-//            throw new RuntimeException("Error occurred while calling FastAPI: " + e.getMessage());
-//        }
-//    }
-//
-//    private String uploadImageToS3(byte[] imageBytes, String imageName) {
-//        try {
-//            // PutObjectRequest 객체 생성 (버킷명, 파일명, 콘텐츠 타입 설정)
-//            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-//                    .bucket(bucketName)
-//                    .key(imageName) // S3에 저장될 파일의 경로 및 이름
-//                    .contentType("image/png") // 이미지 콘텐츠 타입 (예: image/png, image/jpeg)
-//                    .build();
-//
-//            // S3에 동기적으로 파일 업로드
-//            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes));
-//
-//            // 업로드된 파일에 대한 S3 URL 반환
-//            return s3Client.utilities().getUrl(builder -> builder.bucket(bucketName).key(imageName)).toExternalForm();
-//        } catch (AwsServiceException e) {
-//            throw new RuntimeException(e);
-//        } catch (SdkClientException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
