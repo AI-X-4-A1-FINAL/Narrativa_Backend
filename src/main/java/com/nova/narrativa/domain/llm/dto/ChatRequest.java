@@ -10,13 +10,12 @@ import java.util.List;
 @Getter
 @Setter
 public class ChatRequest {
-
     private String genre;
     private int currentStage;
     private String initialStory;
     private String userInput;
-    private String previousUserInput; // 이전 대화 내용
-    private List<String> ConversationHistory; // 모든 대화 내용
-
+    private String previousUserInput;
+    private List<String> ConversationHistory;
+    private String imageUrl;
 }
 

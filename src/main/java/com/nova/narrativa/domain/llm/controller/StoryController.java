@@ -2,6 +2,7 @@ package com.nova.narrativa.domain.llm.controller;
 
 import com.nova.narrativa.domain.llm.dto.ChatRequest;
 import com.nova.narrativa.domain.llm.dto.StoryStartRequest;
+import com.nova.narrativa.domain.llm.entity.GameEntity;
 import com.nova.narrativa.domain.llm.service.StoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,16 @@ public class StoryController {
     public ResponseEntity<String> startGame(@RequestBody StoryStartRequest request) {
         try {
             String storyResponse = storyService.startGame(request.getGenre(), request.getTags());
+
+            // 새로운 게임 엔티티 생성 및 저장
+            GameEntity gameEntity = new GameEntity();
+            gameEntity.setGenre(request.getGenre());
+            gameEntity.setCurrentStage(0); // 시작 스테이지
+            gameEntity.setInitialStory(storyResponse);
+
+            // 저장
+            storyService.saveGame(gameEntity);
+
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
@@ -47,10 +58,21 @@ public class StoryController {
                     conversationHistory
             );
 
+            // 게임 상태 업데이트 및 저장
+            GameEntity gameEntity = new GameEntity();
+            gameEntity.setGenre(request.getGenre());
+            gameEntity.setCurrentStage(request.getCurrentStage());
+            gameEntity.setInitialStory(request.getInitialStory());
+            gameEntity.setUserSelect(request.getUserInput());
+            gameEntity.setPreviousUserInput(previousUserInput);
+            gameEntity.setConversationHistory(request.getConversationHistory());
+
+            // 저장
+            storyService.saveGame(gameEntity);
+
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
     }
-
 }
