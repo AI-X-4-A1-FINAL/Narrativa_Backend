@@ -1,45 +1,38 @@
 package com.nova.narrativa.domain.tti.service;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.core.exception.SdkClientException;
+
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-import java.io.*;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+
+
 import java.time.Duration;
 import java.util.*;
+import java.util.logging.Logger;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ImageService {
 
     private final S3Client s3Client;
@@ -49,6 +42,9 @@ public class ImageService {
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
+
+    @Value("${environments.narrativa-ml.api-key}")  // application.yml에 API 키 설정 추가
+    private String apiKey;
 
     @Value("${aws.s3.images-bucket}")
     private String bucketName;
@@ -135,20 +131,21 @@ public class ImageService {
     public ResponseEntity<String> generateImage(String prompt, String size, int n) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
 
-        // Create payload for FastAPI
         Map<String, Object> requestPayload = Map.of(
                 "prompt", prompt,
                 "size", size,
                 "n", n
         );
 
+        // HTTP 헤더에 API 키 추가
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-API-Key", apiKey);
+
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
         try {
-            // Send POST request to FastAPI to generate the image
             ResponseEntity<byte[]> response = restTemplate.exchange(
                     generateImageUrl,
                     HttpMethod.POST,
@@ -156,21 +153,15 @@ public class ImageService {
                     byte[].class
             );
 
-            byte[] responseData = response.getBody(); // JSON 데이터를 바이트 배열로 반환
+            byte[] responseData = response.getBody();
             if (responseData == null || responseData.length == 0) {
                 throw new RuntimeException("Received empty response from FastAPI");
             }
 
-            // JSON 바이트 배열을 문자열로 변환
             String jsonString = new String(responseData, StandardCharsets.UTF_8);
-            //System.out.println("Received JSON: " + jsonString);
-
-            // JSON 파싱
             JsonNode jsonNode = objectMapper.readTree(jsonString);
             String imageUrl = jsonNode.get("imageUrl").asText();
-            System.out.println("Image URL: " + imageUrl);
 
-            // JSON 데이터를 S3에 저장
             String s3Key = uploadJsonToS3(jsonString);
 
             return ResponseEntity.ok(imageUrl);
