@@ -1,7 +1,7 @@
 package com.nova.narrativa.domain.user.entity;
 
 
-import com.nova.narrativa.domain.llm.entity.GameEntity;
+import com.nova.narrativa.domain.llm.entity.Game;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -59,7 +59,7 @@ public class User {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<GameEntity> games = new ArrayList<>();
+    private List<Game> games = new ArrayList<>();
 
 
     public enum LoginType {

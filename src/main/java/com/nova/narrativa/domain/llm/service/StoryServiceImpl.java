@@ -1,9 +1,7 @@
 package com.nova.narrativa.domain.llm.service;
 
-import com.nova.narrativa.domain.llm.entity.GameEntity;
+import com.nova.narrativa.domain.llm.entity.Game;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,21 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import software.amazon.awssdk.core.exception.SdkException;
-import software.amazon.awssdk.core.sync.ResponseTransformer;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Service
@@ -127,19 +111,18 @@ public class StoryServiceImpl implements StoryService {
         }
     }
     @Override
-    public GameEntity saveGame(GameEntity gameEntity) {
-        return gameRepository.save(gameEntity);
+    public Game saveGame(Game game) {
+        return gameRepository.save(game);
     }
 
     @Override
-    public List<GameEntity> getGamesByUserId(Long userId) {
+    public List<Game> getGamesByUserId(Long userId) {
         return gameRepository.findByUser_Id(userId);
     }
 
     @Override
-    public GameEntity getGameById(Long gameId) {
+    public Game getGameById(Long gameId) {
         return gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
     }
 }
-

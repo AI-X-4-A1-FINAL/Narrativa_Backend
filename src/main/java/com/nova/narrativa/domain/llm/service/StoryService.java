@@ -1,6 +1,6 @@
 package com.nova.narrativa.domain.llm.service;
 
-import com.nova.narrativa.domain.llm.entity.GameEntity;
+import com.nova.narrativa.domain.llm.entity.Game;
 import java.util.List;
 
 public interface StoryService {
@@ -13,7 +13,7 @@ public interface StoryService {
             String previousStory,
             String conversationHistory
     );
-    GameEntity saveGame(GameEntity gameEntity);
-    List<GameEntity> getGamesByUserId(Long userId);
-    GameEntity getGameById(Long gameId);
+    Game saveGame(Game game);
+    List<Game> getGamesByUserId(Long userId);
+    Game getGameById(Long gameId);
 }
