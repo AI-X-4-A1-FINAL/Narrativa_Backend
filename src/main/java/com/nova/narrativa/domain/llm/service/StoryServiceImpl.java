@@ -1,5 +1,7 @@
 package com.nova.narrativa.domain.llm.service;
 
+import com.nova.narrativa.domain.llm.entity.GameEntity;
+import com.nova.narrativa.domain.llm.repository.GameRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +34,7 @@ import java.util.*;
 public class StoryServiceImpl implements StoryService {
 
     private final RestTemplate restTemplate;
-    private static final Logger logger = LoggerFactory.getLogger(StoryServiceImpl.class);
+    private final GameRepository gameRepository;
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;
@@ -43,9 +45,11 @@ public class StoryServiceImpl implements StoryService {
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
 
     @Autowired
-    public StoryServiceImpl(RestTemplate restTemplate) {
+    public StoryServiceImpl(RestTemplate restTemplate, GameRepository gameRepository) {
         this.restTemplate = restTemplate;
+        this.gameRepository = gameRepository;
     }
+
 
     // FastAPI로 전달할 데이터 생성 및 스토리 시작
     @Override
@@ -121,6 +125,21 @@ public class StoryServiceImpl implements StoryService {
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
         }
+    }
+    @Override
+    public GameEntity saveGame(GameEntity gameEntity) {
+        return gameRepository.save(gameEntity);
+    }
+
+    @Override
+    public List<GameEntity> getGamesByUserId(Long userId) {
+        return gameRepository.findByUser_Id(userId);
+    }
+
+    @Override
+    public GameEntity getGameById(Long gameId) {
+        return gameRepository.findById(gameId)
+                .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
     }
 }
 

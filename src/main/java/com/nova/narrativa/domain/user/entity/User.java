@@ -1,7 +1,7 @@
 package com.nova.narrativa.domain.user.entity;
 
-import com.nova.narrativa.domain.game.entity.Story;
-import com.nova.narrativa.domain.game.entity.UserGame;
+
+import com.nova.narrativa.domain.llm.entity.GameEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -59,11 +59,9 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Story> stories = new ArrayList<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<GameEntity> games = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<UserGame> userGames = new ArrayList<>();
 
     public enum LoginType {
         KAKAO, GOOGLE, GITHUB
