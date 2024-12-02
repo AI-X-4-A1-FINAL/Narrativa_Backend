@@ -27,7 +27,7 @@ public class ChatRequest {
     private String initialStory; // 초기 세계관
 
     @NotEmpty(message = "선택은 필수입니다.")
-    private String userInput;
+    private String userSelect;
 
     @NotEmpty(message = "이전 대화 내용은 필수입니다.")
     private String previousUserInput; // 이전 대화 내용
