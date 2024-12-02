@@ -4,6 +4,7 @@ import com.nova.narrativa.domain.llm.dto.ChatRequest;
 import com.nova.narrativa.domain.llm.dto.StoryStartRequest;
 import com.nova.narrativa.domain.llm.entity.GameEntity;
 import com.nova.narrativa.domain.llm.service.StoryService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class StoryController {
     }
 
     @PostMapping("/start")
-    public ResponseEntity<String> startGame(@RequestBody StoryStartRequest request) {
+    public ResponseEntity<String> startGame(@Valid @RequestBody StoryStartRequest request) {
         try {
             String storyResponse = storyService.startGame(request.getGenre(), request.getTags());
 
@@ -41,7 +42,7 @@ public class StoryController {
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<String> continueStory(@RequestBody ChatRequest request) {
+    public ResponseEntity<String> continueStory(@Valid @RequestBody ChatRequest request) {
         try {
             // List<String>을 String으로 변환
             String conversationHistory = String.join("\n", request.getConversationHistory());
@@ -53,7 +54,7 @@ public class StoryController {
                     request.getGenre(),
                     request.getCurrentStage(),
                     request.getInitialStory(),
-                    request.getUserInput(),
+                    request.getUserSelect(),
                     request.getPreviousUserInput(),
                     conversationHistory
             );
