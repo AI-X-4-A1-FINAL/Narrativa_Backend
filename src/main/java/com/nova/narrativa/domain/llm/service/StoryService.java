@@ -5,15 +5,9 @@ import java.util.List;
 
 public interface StoryService {
     String startGame(String genre, List<String> tags, Long userId);
-    String continueStory(
-            Long gameId,    // gameId 추가
-            String genre,
-            int currentStage,
-            String initialStory,
-            String userInput,
-            String previousStory,
-            String conversationHistory
-    );
+    String continueStory(Long gameId, String genre, int currentStage,
+                         String initialStory, String userInput,
+                         String previousStory, String conversationHistory);
     Game saveGame(Game game);
     List<Game> getGamesByUserId(Long userId);
     Game getGameById(Long gameId);

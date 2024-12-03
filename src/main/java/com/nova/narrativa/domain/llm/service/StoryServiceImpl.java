@@ -1,8 +1,10 @@
 package com.nova.narrativa.domain.llm.service;
 
 import com.nova.narrativa.domain.llm.entity.Game;
+import com.nova.narrativa.domain.llm.entity.GameUser;
 import com.nova.narrativa.domain.llm.entity.Stage;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
+import com.nova.narrativa.domain.llm.repository.GameUserRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
@@ -27,29 +29,28 @@ public class StoryServiceImpl implements StoryService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final StageRepository stageRepository;
+    private final GameUserRepository gameUserRepository;
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;
 
-    @Value("${environments.narrativa-ml.api-key}")  // application.yml에 API 키 설정 추가
+    @Value("${environments.narrativa-ml.api-key}")
     private String apiKey;
 
-    private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
-
-
     @Autowired
-    public StoryServiceImpl(RestTemplate restTemplate, GameRepository gameRepository, UserRepository userRepository, StageRepository stageRepository) {
+    public StoryServiceImpl(RestTemplate restTemplate, GameRepository gameRepository,
+                            UserRepository userRepository, StageRepository stageRepository,
+                            GameUserRepository gameUserRepository) {
         this.restTemplate = restTemplate;
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.stageRepository = stageRepository;
+        this.gameUserRepository = gameUserRepository;
     }
 
-
-    // FastAPI로 전달할 데이터 생성 및 스토리 시작
     @Override
     public String startGame(String genre, List<String> tags, Long userId) {
-        // FastAPI로 전달할 데이터 생성 (userId 제외)
+        // FastAPI 요청 데이터 구성
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("tags", tags);
@@ -61,7 +62,7 @@ public class StoryServiceImpl implements StoryService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
         try {
-            // FastAPI로 스토리 생성 요청
+            // FastAPI 요청
             ResponseEntity<String> response = restTemplate.exchange(
                     fastApiUrl + "/api/story/start",
                     HttpMethod.POST,
@@ -69,15 +70,17 @@ public class StoryServiceImpl implements StoryService {
                     String.class
             );
 
-            // User 조회
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+            // 응답 확인
+            System.out.println("FastAPI Response: " + response.getBody());
 
-            // 게임 생성 및 저장
+            // Game 엔티티 생성 및 저장
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
             Game game = new Game();
+            game.setUser(user);
             game.setGenre(genre);
             game.setInitialStory(response.getBody());
-            game.setUser(user);  // User 설정
             gameRepository.save(game);
 
             return response.getBody();
@@ -86,17 +89,10 @@ public class StoryServiceImpl implements StoryService {
         }
     }
 
-    // 스토리 이어가기 (대화 내용 포함)
     @Override
     public String continueStory(Long gameId, String genre, int currentStage,
-                                String initialStory, String userInput, String previousStory,
-                                String conversationHistory) {
-
-        // 게임 조회
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
-
-        // FastAPI로 전달할 데이터 생성
+                                String initialStory, String userInput,
+                                String previousStory, String conversationHistory) {
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("currentStage", currentStage);
@@ -112,6 +108,7 @@ public class StoryServiceImpl implements StoryService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
         try {
+            // FastAPI 요청
             ResponseEntity<String> response = restTemplate.exchange(
                     fastApiUrl + "/api/story/chat",
                     HttpMethod.POST,
@@ -119,7 +116,10 @@ public class StoryServiceImpl implements StoryService {
                     String.class
             );
 
-            // Stage 엔티티 생성 및 저장
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new RuntimeException("Game not found: " + gameId));
+
+            // Stage 저장
             Stage stage = new Stage();
             stage.setGame(game);
             stage.setStageNumber(currentStage);
@@ -128,11 +128,19 @@ public class StoryServiceImpl implements StoryService {
             stage.setConversationHistory(conversationHistory + "\n" + response.getBody());
             stageRepository.save(stage);
 
+            // GameUser 저장
+            GameUser gameUser = new GameUser();
+            gameUser.setGame(game);
+            gameUser.setUser(game.getUser());
+            gameUser.setCurrentStage(currentStage);
+            gameUserRepository.save(gameUser);
+
             return response.getBody();
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
         }
     }
+
     @Override
     public Game saveGame(Game game) {
         return gameRepository.save(game);
@@ -148,4 +156,5 @@ public class StoryServiceImpl implements StoryService {
         return gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
     }
+
 }
