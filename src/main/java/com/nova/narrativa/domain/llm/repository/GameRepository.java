@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface GameRepository extends JpaRepository<Game, Long> {
-
-
+    List<Game> findByUser_Id(Long userId);
 }
