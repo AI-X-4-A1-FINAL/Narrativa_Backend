@@ -21,7 +21,7 @@ public class StoryStartRequest {
 
     private List<String> tags;
 
-    @NotNull(message = "유저 ID는 필수입니다.")
-    private Long userId;
+//    @NotNull(message = "유저 ID는 필수입니다.")
+//    private Long userId;
 
 }
