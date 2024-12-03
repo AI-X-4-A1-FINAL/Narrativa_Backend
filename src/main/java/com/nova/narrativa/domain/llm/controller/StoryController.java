@@ -24,7 +24,12 @@ public class StoryController {
     @PostMapping("/start")
     public ResponseEntity<String> startGame(@Valid @RequestBody StoryStartRequest request) {
         try {
-            String storyResponse = storyService.startGame(request.getGenre(), request.getTags());
+            // userId를 포함하여 서비스 메서드 호출
+            String storyResponse = storyService.startGame(
+                    request.getGenre(),
+                    request.getTags(),
+                    request.getUserId()  // userId 추가
+            );
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
@@ -41,6 +46,7 @@ public class StoryController {
             String previousUserInput = request.getPreviousUserInput() == null ? "" : request.getPreviousUserInput();
 
             String storyResponse = storyService.continueStory(
+                    request.getGameId(),  // gameId 추가
                     request.getGenre(),
                     request.getCurrentStage(),
                     request.getInitialStory(),

@@ -4,8 +4,9 @@ import com.nova.narrativa.domain.llm.entity.Game;
 import java.util.List;
 
 public interface StoryService {
-    String startGame(String genre, List<String> tags);
+    String startGame(String genre, List<String> tags, Long userId);
     String continueStory(
+            Long gameId,    // gameId 추가
             String genre,
             int currentStage,
             String initialStory,

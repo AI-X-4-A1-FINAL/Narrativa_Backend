@@ -1,24 +1,32 @@
 package com.nova.narrativa.domain.llm.service;
 
 import com.nova.narrativa.domain.llm.entity.Game;
+import com.nova.narrativa.domain.llm.entity.Stage;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import com.nova.narrativa.domain.llm.repository.StageRepository;
+import com.nova.narrativa.domain.user.entity.User;
+import com.nova.narrativa.domain.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;  // 추가
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class StoryServiceImpl implements StoryService {
 
     private final RestTemplate restTemplate;
     private final GameRepository gameRepository;
+    private final UserRepository userRepository;
+    private final StageRepository stageRepository;
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;
@@ -28,27 +36,28 @@ public class StoryServiceImpl implements StoryService {
 
     private Map<Integer, String> previousUserInputMap = new HashMap<>(); // 스테이지마다 이전 대화 내용 관리
 
+
     @Autowired
-    public StoryServiceImpl(RestTemplate restTemplate, GameRepository gameRepository) {
+    public StoryServiceImpl(RestTemplate restTemplate, GameRepository gameRepository, UserRepository userRepository, StageRepository stageRepository) {
         this.restTemplate = restTemplate;
         this.gameRepository = gameRepository;
+        this.userRepository = userRepository;
+        this.stageRepository = stageRepository;
     }
 
 
     // FastAPI로 전달할 데이터 생성 및 스토리 시작
     @Override
-    public String startGame(String genre, List<String> tags) {
-        // FastAPI로 전달할 데이터 생성
+    public String startGame(String genre, List<String> tags, Long userId) {
+        // FastAPI로 전달할 데이터 생성 (userId 제외)
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("tags", tags);
 
-        // 헤더 설정 추가
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-API-Key", apiKey);
 
-        // HttpEntity 생성
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
         try {
@@ -59,6 +68,18 @@ public class StoryServiceImpl implements StoryService {
                     entity,
                     String.class
             );
+
+            // User 조회
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+            // 게임 생성 및 저장
+            Game game = new Game();
+            game.setGenre(genre);
+            game.setInitialStory(response.getBody());
+            game.setUser(user);  // User 설정
+            gameRepository.save(game);
+
             return response.getBody();
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
@@ -67,44 +88,46 @@ public class StoryServiceImpl implements StoryService {
 
     // 스토리 이어가기 (대화 내용 포함)
     @Override
-    public String continueStory(String genre, int currentStage, String initialStory, String userInput, String previousStory, String conversationHistory) {
-        String previousUserInput = previousUserInputMap.getOrDefault(currentStage, "");
+    public String continueStory(Long gameId, String genre, int currentStage,
+                                String initialStory, String userInput, String previousStory,
+                                String conversationHistory) {
 
-        // conversationHistory가 빈 배열로 설정 (null이 아닌 빈 배열을 전달)
-        if (conversationHistory == null || conversationHistory.isEmpty()) {
-            conversationHistory = "[]";  // 빈 배열을 문자열로 설정
-        }
+        // 게임 조회
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
 
+        // FastAPI로 전달할 데이터 생성
         Map<String, Object> requestPayload = new HashMap<>();
         requestPayload.put("genre", genre);
         requestPayload.put("currentStage", currentStage);
         requestPayload.put("initialStory", initialStory);
         requestPayload.put("userInput", userInput);
-        requestPayload.put("previousUserInput", previousUserInput);
-        requestPayload.put("conversationHistory", conversationHistory);  // 빈 배열이 아닌 null로 처리
+        requestPayload.put("previousUserInput", previousStory);
+        requestPayload.put("conversationHistory", conversationHistory);
 
-        // 이전 입력 저장
-        previousUserInputMap.put(currentStage, userInput);
-
-        // 로그 출력: FastAPI로 보내는 데이터 확인
-//        logger.info("Sending data to FastAPI: {}", requestPayload);
-
-        // HttpHeaders 설정
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-API-Key", apiKey);
 
-        // HttpEntity 생성 (RequestPayload와 헤더 포함)
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
-        // FastAPI 요청 (exchange 사용)
         try {
             ResponseEntity<String> response = restTemplate.exchange(
-                    fastApiUrl + "/api/story/chat", // FastAPI URL
-                    HttpMethod.POST,               // POST 메서드
-                    entity,                        // 요청 데이터와 헤더
-                    String.class                   // 응답 타입
+                    fastApiUrl + "/api/story/chat",
+                    HttpMethod.POST,
+                    entity,
+                    String.class
             );
+
+            // Stage 엔티티 생성 및 저장
+            Stage stage = new Stage();
+            stage.setGame(game);
+            stage.setStageNumber(currentStage);
+            stage.setPreviousChoice(previousStory);
+            stage.setUserChoice(userInput);
+            stage.setConversationHistory(conversationHistory + "\n" + response.getBody());
+            stageRepository.save(stage);
+
             return response.getBody();
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
