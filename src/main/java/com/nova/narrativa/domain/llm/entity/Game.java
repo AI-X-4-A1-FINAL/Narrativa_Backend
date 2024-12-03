@@ -15,7 +15,7 @@ import lombok.Setter;
 public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long gameId;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false) // 외래 키 지정

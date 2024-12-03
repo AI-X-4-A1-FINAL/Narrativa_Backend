@@ -9,18 +9,16 @@ import com.nova.narrativa.domain.llm.repository.StageRepository;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;  // 추가
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @Service
 public class StoryServiceImpl implements StoryService {
@@ -71,11 +69,13 @@ public class StoryServiceImpl implements StoryService {
             );
 
             // 응답 확인
-            System.out.println("FastAPI Response: " + response.getBody());
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new RuntimeException("FastAPI 요청 실패: " + response.getStatusCode());
+            }
 
             // Game 엔티티 생성 및 저장
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                    .orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없습니다: " + userId));
 
             Game game = new Game();
             game.setUser(user);
@@ -84,6 +84,12 @@ public class StoryServiceImpl implements StoryService {
             gameRepository.save(game);
 
             return response.getBody();
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("FastAPI 요청 오류: " + e.getMessage());
+        } catch (NoSuchElementException e) {
+            throw new NoSuchElementException("사용자를 찾을 수 없습니다: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("잘못된 인자: " + e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
         }
@@ -116,8 +122,12 @@ public class StoryServiceImpl implements StoryService {
                     String.class
             );
 
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new RuntimeException("FastAPI 요청 실패: " + response.getStatusCode());
+            }
+
             Game game = gameRepository.findById(gameId)
-                    .orElseThrow(() -> new RuntimeException("Game not found: " + gameId));
+                    .orElseThrow(() -> new NoSuchElementException("게임을 찾을 수 없습니다: " + gameId));
 
             // Stage 저장
             Stage stage = new Stage();
@@ -136,6 +146,12 @@ public class StoryServiceImpl implements StoryService {
             gameUserRepository.save(gameUser);
 
             return response.getBody();
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("FastAPI 요청 오류: " + e.getMessage());
+        } catch (NoSuchElementException e) {
+            throw new NoSuchElementException("게임 상태를 찾을 수 없습니다: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("잘못된 인자: " + e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException("FastAPI 요청 중 오류 발생: " + e.getMessage());
         }
@@ -143,18 +159,31 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     public Game saveGame(Game game) {
-        return gameRepository.save(game);
+        try {
+            return gameRepository.save(game);
+        } catch (Exception e) {
+            throw new RuntimeException("게임 저장 중 오류 발생: " + e.getMessage());
+        }
     }
 
     @Override
     public List<Game> getGamesByUserId(Long userId) {
-        return gameRepository.findByUser_Id(userId);
+        try {
+            return gameRepository.findByUser_Id(userId);
+        } catch (Exception e) {
+            throw new RuntimeException("사용자의 게임 목록을 가져오는 중 오류 발생: " + e.getMessage());
+        }
     }
 
     @Override
     public Game getGameById(Long gameId) {
-        return gameRepository.findById(gameId)
-                .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
+        try {
+            return gameRepository.findById(gameId)
+                    .orElseThrow(() -> new NoSuchElementException("게임을 찾을 수 없습니다: " + gameId));
+        } catch (NoSuchElementException e) {
+            throw new NoSuchElementException("게임을 찾을 수 없습니다: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("게임을 가져오는 중 오류 발생: " + e.getMessage());
+        }
     }
-
 }
