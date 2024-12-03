@@ -1,12 +1,14 @@
 package com.nova.narrativa.common.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL) // Null 필드 제외
 public class ApiResponse<T> {
     private int statusCode;
     private String message;
     private T result;
 
-    public ApiResponse() {
-    }
+    public ApiResponse() {}
 
     public ApiResponse(Builder<T> builder) {
         this.statusCode = builder.statusCode;
