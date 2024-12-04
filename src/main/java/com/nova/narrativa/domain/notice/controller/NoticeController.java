@@ -73,8 +73,7 @@ public class NoticeController {
         }
     }
 
-    // 공지사항 삭제 (소프트 삭제)
-    @DeleteMapping("/{id}")
+    @PutMapping("/{id}/delete")
     public ResponseEntity<?> deleteNotice(
             @PathVariable Long id,
             @RequestHeader("Firebase-Token") String firebaseUid) {

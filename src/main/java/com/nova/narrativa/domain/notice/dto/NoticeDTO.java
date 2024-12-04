@@ -11,14 +11,17 @@ public class NoticeDTO {
         private Long id;
         private String title;
         private String content;
+        private Notice.Status status;
         private String createdBy;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
+
 
         public Response(Notice notice) {
             this.id = notice.getId();
             this.title = notice.getTitle();
             this.content = notice.getContent();
+            this.status = notice.getStatus();
             this.createdBy = notice.getCreatedBy().getUsername();
             this.createdAt = notice.getCreatedAt();
             this.updatedAt = notice.getUpdatedAt();
@@ -29,11 +32,13 @@ public class NoticeDTO {
     public static class CreateRequest {
         private String title;
         private String content;
+        private String status;
     }
 
     @Data
     public static class UpdateRequest {
         private String title;
         private String content;
+        private String status;
     }
 }
