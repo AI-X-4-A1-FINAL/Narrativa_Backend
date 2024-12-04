@@ -1,22 +1,18 @@
 package com.nova.narrativa.domain.llm.dto;
 
-import lombok.*;
-
-import java.util.List;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Getter
-@Setter
 public class ChatRequest {
 
+    @NotNull(message = "게임 ID는 필수입니다.")
+    private Long gameId;
+
+    @NotEmpty(message = "장르는 필수입니다.")
     private String genre;
-    private int currentStage;
-    private String initialStory;
-    private String userInput;
-    private String previousUserInput; // 이전 대화 내용
-    private List<String> ConversationHistory; // 모든 대화 내용
 
+    @NotEmpty(message = "사용자 선택은 필수입니다.")
+    private String userSelect;
 }
-
