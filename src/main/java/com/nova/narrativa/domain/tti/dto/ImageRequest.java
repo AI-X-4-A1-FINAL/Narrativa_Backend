@@ -5,6 +5,7 @@ public class ImageRequest {
     private String prompt;
     private String size;
     private int n;
+    private String genre;  // genre 추가
 
     // Getters and Setters
     public String getPrompt() {
@@ -31,13 +32,21 @@ public class ImageRequest {
         this.n = n;
     }
 
-    // toString()을 오버라이드하면 요청 데이터 확인에 유용할 수 있음
+    public String getGenre() {
+        return genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
     @Override
     public String toString() {
         return "ImageRequest{" +
                 "prompt='" + prompt + '\'' +
                 ", size='" + size + '\'' +
                 ", n=" + n +
+                ", genre='" + genre + '\'' +
                 '}';
     }
 }

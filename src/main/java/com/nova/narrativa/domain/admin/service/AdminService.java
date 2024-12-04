@@ -63,5 +63,10 @@ public class AdminService {
         adminUser.setLastLoginAt(LocalDateTime.now());
         adminRepository.save(adminUser);
     }
+
+    public AdminUser getAdminByUid(String uid) {
+        return adminRepository.findByUid(uid)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+    }
 }
 

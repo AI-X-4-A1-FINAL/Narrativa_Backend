@@ -94,13 +94,14 @@ public class ImageService {
     }
 
 
-    public ResponseEntity<String> generateImage(String prompt, String size, int n) {
+    public ResponseEntity<String> generateImage(String prompt, String size, int n, String genre) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
 
         Map<String, Object> requestPayload = Map.of(
                 "prompt", prompt,
                 "size", size,
-                "n", n
+                "n", n,
+                "genre", genre
         );
 
         // HTTP 헤더에 API 키 추가
