@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/generate-story")
 public class StoryController {
@@ -31,9 +29,18 @@ public class StoryController {
                     request.getUserId()
             );
             return ResponseEntity.ok(storyResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("잘못된 요청입니다: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("현재 상태로 인해 요청을 처리할 수 없습니다: " + e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("서버 내부 오류가 발생했습니다: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
+                    .body("알 수 없는 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
@@ -44,12 +51,21 @@ public class StoryController {
             String storyResponse = storyService.continueStory(
                     request.getGameId().toString(),  // story_id
                     request.getGenre(),
-                    request.getUserSelect()  // user_choice
+                    request.getUserChoice()  // user_choice
             );
             return ResponseEntity.ok(storyResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("잘못된 요청입니다: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("현재 상태로 인해 요청을 처리할 수 없습니다: " + e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("서버 내부 오류가 발생했습니다: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
+                    .body("알 수 없는 오류가 발생했습니다: " + e.getMessage());
         }
     }
 }
