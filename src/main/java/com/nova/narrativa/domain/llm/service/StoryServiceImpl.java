@@ -68,6 +68,9 @@ public class StoryServiceImpl implements StoryService {
 
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
+            String storyId = (String) mlResponse.get("story_id");
+            System.out.println("[StoryServiceImpl] Generated story_id: " + storyId);
+
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -95,6 +98,7 @@ public class StoryServiceImpl implements StoryService {
                     "story_id", mlResponse.get("story_id"),
                     "gameId", game.getGameId()
             ));
+
         } catch (Exception e) {
             throw new RuntimeException("Error starting game: " + e.getMessage());
         }
@@ -102,6 +106,8 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     public String continueStory(String storyId, String genre, String userChoice) {
+
+        System.out.println("[StoryServiceImpl] Continuing story with story_id: " + storyId);
         // ML 서버 요청 데이터 구성
         Map<String, Object> request = Map.of(
                 "genre", genre,
@@ -115,6 +121,7 @@ public class StoryServiceImpl implements StoryService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
+
         try {
             // ML 서버 호출
             ResponseEntity<String> response = restTemplate.exchange(
@@ -123,13 +130,53 @@ public class StoryServiceImpl implements StoryService {
                     entity,
                     String.class
             );
-
+            Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
+            System.out.println("[StoryServiceImpl] Continued story_id from response: " + mlResponse.get("story_id"));
             // 응답 반환
             return response.getBody();
         } catch (Exception e) {
             throw new RuntimeException("Error communicating with ML server: " + e.getMessage());
         }
     }
+
+    @Override
+    public String generateEnding(String storyId) {
+        System.out.println("[Service] Generating ending for story_id: " + storyId);
+
+        Map<String, Object> request = Map.of("story_id", storyId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-API-Key", apiKey);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+
+        try {
+            System.out.println("[Service] Sending request to ML server: " + request);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    mlServerUrl + "/api/story/end",
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+            );
+
+            System.out.println("[Service] Response from ML server: " + response.getBody());
+            Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
+
+            if (!mlResponse.containsKey("story")) {
+                throw new RuntimeException("ML server response is missing 'story' field");
+            }
+
+            return objectMapper.writeValueAsString(Map.of(
+                    "story", mlResponse.get("story"),
+                    "story_id", storyId
+            ));
+        } catch (Exception e) {
+            System.err.println("[Service] Error: " + e.getMessage());
+            throw new RuntimeException("Error generating story ending: " + e.getMessage());
+        }
+    }
+
 
     @Override
     public Game saveGame(Game game) {

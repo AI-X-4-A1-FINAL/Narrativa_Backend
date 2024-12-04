@@ -52,4 +52,19 @@ public class StoryController {
                     .body("Error: " + e.getMessage());
         }
     }
+
+    @PostMapping("/end")
+    public ResponseEntity<String> generateEnding(@Valid @RequestBody ChatRequest request) {
+        try {
+            System.out.println("[Controller] Received request: " + request);
+            String storyResponse = storyService.generateEnding(request.getGameId().toString());
+            System.out.println("[Controller] Response from service: " + storyResponse);
+            return ResponseEntity.ok(storyResponse);
+        } catch (Exception e) {
+            System.err.println("[Controller] Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
 }

@@ -7,8 +7,9 @@ import java.util.List;
 public interface StoryService {
     String startGame(String genre, List<String> tags, Long userId);
 
-    // ML 서버 요청 형식에 맞게 파라미터 간소화
     String continueStory(String storyId, String genre, String userChoice);
+
+    String generateEnding(String storyId);
 
     Game saveGame(Game game);
 
