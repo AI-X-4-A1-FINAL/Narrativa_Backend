@@ -26,5 +26,4 @@ public class GameUser {
     private User user;
 
     private Integer currentStage;
-
 }
