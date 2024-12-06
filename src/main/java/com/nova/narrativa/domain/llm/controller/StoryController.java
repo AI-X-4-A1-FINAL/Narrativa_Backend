@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/generate-story")
 public class StoryController {
@@ -21,9 +23,9 @@ public class StoryController {
     }
 
     @PostMapping("/start")
-    public ResponseEntity<String> startGame(@Valid @RequestBody StoryStartRequest request) {
+    public ResponseEntity<Map<String, Object>> startGame(@Valid @RequestBody StoryStartRequest request) {
         try {
-            String storyResponse = storyService.startGame(
+            Map<String, Object> storyResponse = storyService.startGame(
                     request.getGenre(),
                     request.getTags(),
                     request.getUserId()
@@ -31,19 +33,34 @@ public class StoryController {
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
+                    .body(Map.of("error", "Error: " + e.getMessage()));
         }
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<String> continueStory(@Valid @RequestBody ChatRequest request) {
+    public ResponseEntity<String> continueStory(@RequestBody Map<String, Object> request) {
+        // 요청 데이터 로그
+        System.out.println("[CHAT REQUEST] Request body: " + request);
+
         try {
+            // Map에서 데이터 추출
+            Long gameId = Long.valueOf(String.valueOf(request.get("gameId")));
+            String genre = String.valueOf(request.get("genre"));
+            String userChoice = String.valueOf(request.get("userSelect"));
+
+            // 요청 데이터 로그
+            System.out.println("[CHAT REQUEST] Game ID: " + gameId);
+            System.out.println("[CHAT REQUEST] Genre: " + genre);
+            System.out.println("[CHAT REQUEST] User Choice: " + userChoice);
+
             // StoryService 호출
             String storyResponse = storyService.continueStory(
-                    request.getGameId().toString(),  // story_id
-                    request.getGenre(),
-                    request.getUserSelect()  // user_choice
+                    gameId.toString(),
+                    genre,
+                    userChoice
             );
+            System.out.println("[프론트로 보내는 값]: " + storyResponse); // 응답 로그 추가
+
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
