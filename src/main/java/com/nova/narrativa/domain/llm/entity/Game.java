@@ -28,6 +28,10 @@ public class Game {
     @Column(length = 1000)
     private String initialStory; // 초기 스토리
 
+    @Lob
+    @Column(name = "prompt")
+    private String prompt; // 프롬프트
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Stage> stages = new ArrayList<>(); // 스테이지 리스트
 }
