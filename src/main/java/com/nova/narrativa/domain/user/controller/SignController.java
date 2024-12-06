@@ -1,19 +1,20 @@
 package com.nova.narrativa.domain.user.controller;
 
-import com.nova.narrativa.domain.user.dto.SignUp;
-import com.nova.narrativa.domain.user.dto.SocialLoginResult;
+import com.nova.narrativa.domain.user.dto.SignUpDTO;
 import com.nova.narrativa.domain.user.dto.UserProfileInfo;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.SignUpService;
-import jakarta.servlet.http.HttpSession;
+import com.nova.narrativa.domain.user.util.RequestParseUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.view.RedirectView;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RequestMapping("/api")
@@ -26,7 +27,7 @@ public class SignController {
 
     // 회원가입
     @PostMapping("/users/sign-up")
-    public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
+    public ResponseEntity<String> signUp(@RequestBody SignUpDTO signUp) {
         log.info("Sign up: {}", signUp);
 
         try {
@@ -45,12 +46,15 @@ public class SignController {
 
     // 회원탈퇴
     @PutMapping("/users/deactivate")
-    public ResponseEntity<String> deactivate(@CookieValue Long id) {
-        log.info("Deactivate user: {}", id);
+    public ResponseEntity<String> deactivate(@RequestHeader("Authorization") String authorizationHeader,
+                                             HttpServletRequest request) {
+        Long seq = RequestParseUtil.getSeq(request);
+
+        log.info("Deactivate user: {}", seq);
 
         // TODO: 회원의 경우 본인 userId인 경우만 탈퇴 가능, 어드민의 경우 상관없이 가능
 
-        String loggedInUserResult = signUpService.isLoggedInUser(id);
+        String loggedInUserResult = signUpService.isLoggedInUser(seq);
         if (loggedInUserResult == null) {
             return ResponseEntity.status(403).body("Unauthorized: 로그인한 유저의 ID가 아닙니다.");
         } else {
@@ -58,12 +62,16 @@ public class SignController {
         }
     }
 
-    // 회원 정보 전체 조회
-    @GetMapping("/users")
-    public ResponseEntity<UserProfileInfo> getUser(@CookieValue Long id) {
-        log.info("getUser id: {}", id);
+//    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_VIP')")
+//    @PreAuthorize("hasAnyRole('ROLE_ADMIN')")
+    @GetMapping("/users")   // 회원 정보 전체 조회
+    public ResponseEntity<UserProfileInfo> getUser(@RequestHeader("Authorization") String authorizationHeader,
+                                                   HttpServletRequest request) {
+        log.info("Get user: {}", authorizationHeader);
 
-        Optional<User> userInfo = signUpService.getUserProfileInfo(id);
+        Long seq = RequestParseUtil.getSeq(request);
+
+        Optional<User> userInfo = signUpService.getUserProfileInfo(seq);
         // 회원 정보가 존재 (회원 타입 상태 상관없이 조회처리)
         if (userInfo.isPresent()) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
@@ -79,10 +87,13 @@ public class SignController {
 
     // 회원 정보 상태 조회
     @GetMapping("/users/status")
-    public ResponseEntity<UserProfileInfo> getUserStatus(@CookieValue Long id) {
-        log.info("getUserStatus id: {}", id);
+    public ResponseEntity<UserProfileInfo> getUserStatus(@RequestHeader("Authorization") String authorizationHeader,
+                                                         HttpServletRequest request) {
+        log.info("getUserStatus authorizationHeader: {}", authorizationHeader);
 
-        Optional<User> userInfo = signUpService.getUserProfileInfo(id);
+        Long seq = RequestParseUtil.getSeq(request);
+
+        Optional<User> userInfo = signUpService.getUserProfileInfo(seq);
         // 회원 정보가 존재 (회원 타입 상태 상관없이 조회처리)
         if (userInfo.isPresent()) {
             UserProfileInfo userProfileInfo = UserProfileInfo.builder()
@@ -96,17 +107,23 @@ public class SignController {
 
     // 회원정보 업데이트
     @PutMapping("/users")
-    public ResponseEntity<Object> updateUser(@CookieValue Long id, @RequestBody UserProfileInfo userProfileInfo) {
+    public ResponseEntity<Object> updateUser(@RequestHeader("Authorization") String authorizationHeader,
+                                             HttpServletRequest request,
+                                             @RequestBody UserProfileInfo userProfileInfo) {
         log.info("userProfileInfo: {}", userProfileInfo);
 
-        return signUpService.updateUser(id, userProfileInfo);
+        Long seq = RequestParseUtil.getSeq(request);
+
+        return signUpService.updateUser(seq, userProfileInfo);
     }
 
     // 유저ID로 조회한 유저가 ACTIVE 상태인지 조회
     @GetMapping("/checkUserStatus")
-    public ResponseEntity<String> checkUserStatus(@CookieValue Long id) {
+    public ResponseEntity<String> checkUserStatus(@RequestHeader("Authorization") String authorizationHeader,
+                                                  HttpServletRequest request) {
+        Long seq = RequestParseUtil.getSeq(request);
         try {
-            boolean isActive = signUpService.isUserActive(id);
+            boolean isActive = signUpService.isUserActive(seq);
             return new ResponseEntity<>(isActive ? HttpStatus.OK : HttpStatus.FORBIDDEN);
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(e.getMessage());
