@@ -31,7 +31,6 @@ public class Stage {
     @Column
     private String imageUrl; // 이미지 URL
 
-    private String prompt; // 프롬프트
 
     @Lob
     private String choices; // 스토리 선택지
@@ -41,4 +40,7 @@ public class Stage {
 
     @Column
     private LocalDateTime endTime; // 스테이지 종료 시간
+
+    @Column
+    private String story; //
 }
