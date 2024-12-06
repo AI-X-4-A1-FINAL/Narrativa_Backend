@@ -33,7 +33,6 @@ public class KakaoApi {
     public String getUserInfo(String code) throws Exception {
         if (code == null) throw new Exception("Failed get authorization code");
 
-        // 현재 accessToken만 사용 o, refreshToken 사용 x
         String accessToken;
 
         try {
