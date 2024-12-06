@@ -70,7 +70,7 @@ public class StoryService {
                     String.class
             );
 
-//            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
+            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
 
             // 응답 처리
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
@@ -83,6 +83,7 @@ public class StoryService {
             game.setUser(user);
             game.setGenre(genre);
             game.setInitialStory((String) mlResponse.get("story"));
+            game.setPrompt((String) mlResponse.get("file_name"));
             game = gameRepository.save(game);
 
             // Stage 엔티티 저장
@@ -137,10 +138,65 @@ public class StoryService {
             Map<String, Object> mlResponse = new ObjectMapper().readValue(response.getBody(), Map.class);
             System.out.println("[StoryService] Response from ML server: " + mlResponse);
 
-            // Story를 DB에 저장
+            // Story와 choices 값 추출
             String story = (String) mlResponse.get("story");
             List<String> choices = (List<String>) mlResponse.get("choices");
-            String stageNumber = (String) mlResponse.get("stage_number");
+
+            // stage_number 값 처리
+            String stageNumberStr = (String) mlResponse.get("stage_number");
+            int stageNumber = 1;  // 기본값 설정
+            if (stageNumberStr != null) {
+                try {
+                    stageNumber = Integer.parseInt(stageNumberStr);
+                } catch (NumberFormatException e) {
+                    System.err.println("[StoryService] Invalid stage_number value: " + stageNumberStr);
+                }
+            }
+
+            // 게임의 마지막 스테이지 처리
+            if (stageNumber > 5) {
+                System.out.println("[StoryService] Game is completed. No further stages allowed.");
+                return new ObjectMapper().writeValueAsString(Map.of("message", "Game Over"));
+            }
+
+            // 이전 스테이지 정보 가져오기 (conversationHistory에 사용)
+            Stage previousStage = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId))
+                    .orElse(null);  // previousStage가 없으면 null을 할당
+
+            // 새로운 stageNumber 계산: 이전 스테이지가 있으면 그 번호에 +1
+            if (previousStage != null) {
+                stageNumber = previousStage.getStageNumber() + 1;
+            }
+
+            String conversationHistory = "";
+            if (previousStage != null) {
+                // 이전 스테이지의 story와 userChoice를 가져와서 conversationHistory에 저장
+                conversationHistory = previousStage.getUserChoice() + " " + previousStage.getStory();  // 이전 스테이지의 story와 userChoice 합침
+            }
+
+            // Game 엔티티 조회 (gameId로)
+            Optional<Game> gameOptional = gameRepository.findById(Long.parseLong(gameId));
+            if (gameOptional.isEmpty()) {
+                throw new RuntimeException("gameId를 찾을 수 없음.: " + gameId);
+            }
+            Game game = gameOptional.get();
+
+            // Stage 엔티티 저장
+            Stage stage = new Stage();
+            stage.setGame(game);  // Game 객체 설정
+            stage.setStageNumber(stageNumber);  // stage_number 설정
+            stage.setUserChoice(userChoice);
+            stage.setConversationHistory(conversationHistory);  // 이전 스테이지의 선택과 대화 기록
+            stage.setImageUrl("");  // 이미지 URL (필요에 따라 처리)
+            stage.setChoices(String.join(", ", choices));  // 선택지를 문자열로 저장
+            stage.setStory(story);
+
+            // 스테이지 시작 시간 기록
+            stage.setStartTime(LocalDateTime.now());
+            stage.setEndTime(null);  // 종료 시간은 아직 설정되지 않음
+
+            // Stage 저장
+            stageRepository.save(stage);
 
             // 반환 데이터 구성
             Map<String, Object> result = new HashMap<>();
@@ -148,7 +204,7 @@ public class StoryService {
             result.put("choices", choices);
             result.put("game_id", gameId);
 
-            System.out.println("[StoryService] Returning result: " + result);
+//            System.out.println("[프론트로 보내는 값]" + result);
 
             return new ObjectMapper().writeValueAsString(result);  // JSON으로 변환하여 반환
 

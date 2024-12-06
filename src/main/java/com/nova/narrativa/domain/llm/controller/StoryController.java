@@ -39,19 +39,12 @@ public class StoryController {
 
     @PostMapping("/chat")
     public ResponseEntity<String> continueStory(@RequestBody Map<String, Object> request) {
-        // 요청 데이터 로그
-        System.out.println("[CHAT REQUEST] Request body: " + request);
-
+//        System.out.println("[프론트에서 /chat으로 보낸 값]: " + request);
         try {
             // Map에서 데이터 추출
             Long gameId = Long.valueOf(String.valueOf(request.get("gameId")));
             String genre = String.valueOf(request.get("genre"));
             String userChoice = String.valueOf(request.get("userSelect"));
-
-            // 요청 데이터 로그
-            System.out.println("[CHAT REQUEST] Game ID: " + gameId);
-            System.out.println("[CHAT REQUEST] Genre: " + genre);
-            System.out.println("[CHAT REQUEST] User Choice: " + userChoice);
 
             // StoryService 호출
             String storyResponse = storyService.continueStory(
@@ -59,7 +52,7 @@ public class StoryController {
                     genre,
                     userChoice
             );
-            System.out.println("[프론트로 보내는 값]: " + storyResponse); // 응답 로그 추가
+            System.out.println("[프론트 보내는 값]" + storyResponse); // 응답 로그 추가
 
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
