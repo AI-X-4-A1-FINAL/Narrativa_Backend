@@ -9,6 +9,7 @@ import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.security.WeakKeyException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -16,14 +17,22 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Map;
 
+@Component
 @Slf4j
 public class JWTUtil {
 
-    private static final String key = "skoqfbqw0j5f748b45j12qw54ofbojqbeofgjeqbgjqebjofjwbejkfwejfkbwjkefbkjwwefe1212542213efbbo";
+    private static String key;
+
+    // static 필드를 초기화하기 위한 생성자 주입 방식
+    public JWTUtil(@Value("${spring.firebase.client_x509_cert_url}") String jwtKey) {
+        JWTUtil.key = jwtKey;
+        log.info("JWT Key initialized: {}", JWTUtil.key);
+    }
 
     // JWT 문자열 생성
     public static String generateToken(Map<String, Object> valueMap, int min) {
-        log.info("valueMap: {}, min: {}, key: {}", valueMap, min, JWTUtil.key);
+        log.info("valueMap: {}, min: {}, key: {}", valueMap, min, key);
+        if (JWTUtil.key == null)  throw new RuntimeException("JWT TOKEN Key가 NULL 입니다.");
         if (JWTUtil.key.length() < 32)  throw new RuntimeException("JWT TOKEN 생성시 키 값은 32자 이상이어야 합니다.");
         SecretKey secretKey;
 
