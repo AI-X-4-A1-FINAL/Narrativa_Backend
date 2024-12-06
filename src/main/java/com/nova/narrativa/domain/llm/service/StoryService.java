@@ -2,22 +2,24 @@ package com.nova.narrativa.domain.llm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.domain.llm.entity.Game;
-import com.nova.narrativa.domain.llm.entity.GameUser;
 import com.nova.narrativa.domain.llm.entity.Stage;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
-import com.nova.narrativa.domain.llm.repository.GameUserRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class StoryService {
@@ -26,8 +28,8 @@ public class StoryService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final StageRepository stageRepository;
-    private final GameUserRepository gameUserRepository;
     private final ObjectMapper objectMapper;
+    private static final Logger logger = LoggerFactory.getLogger(StoryService.class);
 
     @Value("${environments.narrativa-ml.url}")
     private String mlServerUrl;
@@ -38,16 +40,15 @@ public class StoryService {
     @Autowired
     public StoryService(RestTemplate restTemplate, GameRepository gameRepository,
                         UserRepository userRepository, StageRepository stageRepository,
-                        GameUserRepository gameUserRepository, ObjectMapper objectMapper) {
+                       ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.stageRepository = stageRepository;
-        this.gameUserRepository = gameUserRepository;
         this.objectMapper = objectMapper;
     }
 
-    public String startGame(String genre, List<String> tags, Long userId) {
+    public Map<String, Object> startGame(String genre, List<String> tags, Long userId) {
         Map<String, Object> request = new HashMap<>();
         request.put("genre", genre);
         request.put("tags", tags);
@@ -58,6 +59,9 @@ public class StoryService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
+//        logger.info("Sending request to ML server: {}", request); // 요청 로그
+//        logger.info("Headers: {}", headers); // 헤더 로그
+
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     mlServerUrl + "/api/story/start",
@@ -66,51 +70,52 @@ public class StoryService {
                     String.class
             );
 
-            Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
+//            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
 
-            String storyId = (String) mlResponse.get("story_id");
-            System.out.println("[StoryService] Generated story_id: " + storyId);
+            // 응답 처리
+            Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
+            // Game 엔티티 저장
             Game game = new Game();
             game.setUser(user);
             game.setGenre(genre);
             game.setInitialStory((String) mlResponse.get("story"));
             game = gameRepository.save(game);
 
+            // Stage 엔티티 저장
             Stage stage = new Stage();
             stage.setGame(game);
             stage.setStageNumber(1);
-            stage.setConversationHistory((String) mlResponse.get("story"));
+            stage.setChoices(objectMapper.writeValueAsString(mlResponse.get("choices")));
+            stage.setStartTime(LocalDateTime.now());
             stageRepository.save(stage);
 
-            GameUser gameUser = new GameUser();
-            gameUser.setGame(game);
-            gameUser.setUser(user);
-            gameUser.setCurrentStage(1);
-            gameUserRepository.save(gameUser);
-
-            return objectMapper.writeValueAsString(Map.of(
+            // 반환 데이터 구성
+            Map<String, Object> result = Map.of(
                     "story", mlResponse.get("story"),
                     "choices", mlResponse.get("choices"),
-                    "story_id", mlResponse.get("story_id"),
                     "gameId", game.getGameId()
-            ));
+            );
 
+//            logger.info("Returning response: {}", result); // 최종 반환 로그
+
+            return result;
         } catch (Exception e) {
             throw new RuntimeException("Error starting game: " + e.getMessage());
         }
     }
 
-    public String continueStory(String storyId, String genre, String userChoice) {
-        System.out.println("[StoryService] Continuing story with story_id: " + storyId);
+    public String continueStory(String gameId, String genre, String userChoice) {
+        System.out.println("[StoryService] Continuing story with game_id: " + gameId);
 
+        // FastAPI로 보낼 요청 데이터 준비
         Map<String, Object> request = Map.of(
                 "genre", genre,
                 "user_choice", userChoice,
-                "story_id", storyId
+                "game_id", gameId
         );
 
         HttpHeaders headers = new HttpHeaders();
@@ -120,6 +125,7 @@ public class StoryService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
         try {
+            // FastAPI 서버로 요청 보내기
             ResponseEntity<String> response = restTemplate.exchange(
                     mlServerUrl + "/api/story/continue",
                     HttpMethod.POST,
@@ -127,19 +133,36 @@ public class StoryService {
                     String.class
             );
 
-            Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
-            System.out.println("[StoryService] Continued story_id from response: " + mlResponse.get("story_id"));
+            // FastAPI에서 응답받은 JSON 파싱
+            Map<String, Object> mlResponse = new ObjectMapper().readValue(response.getBody(), Map.class);
+            System.out.println("[StoryService] Response from ML server: " + mlResponse);
 
-            return response.getBody();
+            // Story를 DB에 저장
+            String story = (String) mlResponse.get("story");
+            List<String> choices = (List<String>) mlResponse.get("choices");
+            String stageNumber = (String) mlResponse.get("stage_number");
+
+            // 반환 데이터 구성
+            Map<String, Object> result = new HashMap<>();
+            result.put("story", story);
+            result.put("choices", choices);
+            result.put("game_id", gameId);
+
+            System.out.println("[StoryService] Returning result: " + result);
+
+            return new ObjectMapper().writeValueAsString(result);  // JSON으로 변환하여 반환
+
         } catch (Exception e) {
+            System.err.println("[StoryService] Error: " + e.getMessage());
             throw new RuntimeException("Error communicating with ML server: " + e.getMessage());
         }
     }
 
-    public String generateEnding(String storyId) {
-        System.out.println("[StoryService] Generating ending for story_id: " + storyId);
 
-        Map<String, Object> request = Map.of("story_id", storyId);
+    public String generateEnding(String gameId) {
+        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
+
+        Map<String, Object> request = Map.of("game_id", gameId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -163,7 +186,7 @@ public class StoryService {
 
             return objectMapper.writeValueAsString(Map.of(
                     "story", mlResponse.get("story"),
-                    "story_id", storyId
+                    "game_id", gameId
             ));
         } catch (Exception e) {
             throw new RuntimeException("Error generating story ending: " + e.getMessage());
