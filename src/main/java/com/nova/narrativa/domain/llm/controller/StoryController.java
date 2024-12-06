@@ -52,7 +52,7 @@ public class StoryController {
                     genre,
                     userChoice
             );
-            System.out.println("[프론트 보내는 값]" + storyResponse); // 응답 로그 추가
+//            System.out.println("[프론트 보내는 값]" + storyResponse); // 응답 로그 추가
 
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
@@ -62,11 +62,21 @@ public class StoryController {
     }
 
     @PostMapping("/end")
-    public ResponseEntity<String> generateEnding(@Valid @RequestBody ChatRequest request) {
+    public ResponseEntity<String> generateEnding(@RequestBody Map<String, Object> request) {
         try {
+            // 로그 출력해서 데이터 확인
             System.out.println("[Controller] Received request: " + request);
-            String storyResponse = storyService.generateEnding(request.getGameId().toString());
-            System.out.println("[Controller] Response from service: " + storyResponse);
+
+            // Map에서 데이터 추출
+            String gameId = String.valueOf(request.get("gameId"));
+            String genre = String.valueOf(request.get("genre"));
+            String userChoice = String.valueOf(request.get("userSelect"));
+
+            // StoryService 호출
+            String storyResponse = storyService.generateEnding(gameId, genre, userChoice);
+
+            System.out.println("[Controller] Response from service: " + storyResponse); // 응답 로그 추가
+
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             System.err.println("[Controller] Error: " + e.getMessage());
