@@ -1,8 +1,8 @@
 package com.nova.narrativa.domain.user.controller;
 
 import com.nova.narrativa.domain.user.dto.JWTTokenDTO;
+import com.nova.narrativa.domain.user.dto.SignUp;
 import com.nova.narrativa.domain.user.util.JWTUtil;
-import com.nova.narrativa.domain.user.dto.SignUpDTO;
 import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import com.nova.narrativa.domain.user.dto.UserExistenceDto;
 import com.nova.narrativa.domain.user.entity.User;
@@ -107,7 +107,7 @@ public class SocialLoginController {
                 tokenDTO.setUserId(Long.valueOf(socialLoginResult.getId()));
 
                 // 회원가입
-                signUpService.register(SignUpDTO.builder()
+                signUpService.register(SignUp.builder()
                                                 .user_id(socialLoginResult.getId())
                                                 .username(socialLoginResult.getNickname())
                                                 .profile_url(socialLoginResult.getProfile_image_url())
@@ -183,7 +183,7 @@ public class SocialLoginController {
 
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUpDTO signUp = SignUpDTO.builder()
+                SignUp signUp = SignUp.builder()
                         .username(socialLoginResult.getNickname())
                         .profile_url(socialLoginResult.getProfile_image_url())
                         .user_id(socialLoginResult.getId())
@@ -244,7 +244,7 @@ public class SocialLoginController {
 
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUpDTO signUp = SignUpDTO.builder()
+                SignUp signUp = SignUp.builder()
                         .username(socialLoginResult.getNickname())
                         .profile_url(socialLoginResult.getProfile_image_url())
                         .user_id(socialLoginResult.getId())
