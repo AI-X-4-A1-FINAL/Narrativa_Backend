@@ -3,6 +3,8 @@ package com.nova.narrativa.domain.user.controller;
 
 import com.nova.narrativa.domain.user.service.S3ImageService;
 import com.nova.narrativa.domain.user.service.SignUpService;
+import com.nova.narrativa.domain.user.util.RequestParseUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,15 +26,18 @@ public class S3ImgController {
 
     // 이미지 업로드
     @PostMapping("/images/upload")
-    public ResponseEntity<?> s3Upload(@RequestPart(value = "image", required = false) MultipartFile image,
-                                      @CookieValue Long id) {
-        if (image == null || image.isEmpty()) {
+    public ResponseEntity<?> s3Upload(@RequestPart(value = "image") MultipartFile image,
+                                      @RequestHeader("Authorization") String authorizationHeader,
+                                      HttpServletRequest request) {
+        log.info("image: {}", image);
+        if (image.isEmpty()) {
             log.error("이미지 파일이 비어 있습니다.");
             return ResponseEntity.badRequest().body("이미지 파일이 비어 있습니다.");
         }
 
         try {
-            if (signUpService.isUserActive(id)) {   // ACTIVE 유저 인 경우만
+            Long seq = RequestParseUtil.getSeq(request);
+            if (signUpService.isUserActive(seq)) {   // ACTIVE 유저 인 경우만
                 String uploadedImageUrl = s3ImageService.upload(image);
                 Map<String, String> response = new HashMap<>();
                 response.put("imageUrl", uploadedImageUrl);
@@ -49,9 +54,12 @@ public class S3ImgController {
     // S3 버킷에 있는 이미지 삭제
     @DeleteMapping("/images")
     public ResponseEntity<?> s3Delete(@RequestParam(value = "imageUrl") String imageUrl,
-                                      @CookieValue Long id) {
+                                      @RequestHeader("Authorization") String authorizationHeader,
+                                      HttpServletRequest request) {
+
         try {
-            if (signUpService.isUserActive(id)) {   // ACTIVE 유저 인 경우만
+            Long seq = RequestParseUtil.getSeq(request);
+            if (signUpService.isUserActive(seq)) {   // ACTIVE 유저 인 경우만
                 s3ImageService.deleteImageFromS3(imageUrl);
                 return ResponseEntity.ok("이미지 삭제 완료");
             } else {
@@ -66,9 +74,12 @@ public class S3ImgController {
     // S3 버킷에 1개의 이미지 URL로 불러오기(filePath: 폴더명/파일명)
     @GetMapping("/image")
     public ResponseEntity<String> getImageUrl(@RequestParam String filePath,
-                                              @CookieValue Long id) {
+                                              @RequestHeader("Authorization") String authorizationHeader,
+                                              HttpServletRequest request) {
+
         try {
-            if (signUpService.isUserActive(id)) {   // ACTIVE 유저 인 경우만
+            Long seq = RequestParseUtil.getSeq(request);
+            if (signUpService.isUserActive(seq)) {   // ACTIVE 유저 인 경우만
                 // Presigned URL 생성
                 String presignedUrl = s3ImageService.getPresignedUrl(filePath);
                 System.out.println("Presigned URL: " + presignedUrl);
@@ -84,9 +95,12 @@ public class S3ImgController {
 
     // S3 버킷에 있는 이미지 URL로 불러오기
     @GetMapping("/images/urls")
-    public ResponseEntity<?> getAllImageUrls(@CookieValue Long id) {
+    public ResponseEntity<?> getAllImageUrls(@RequestHeader("Authorization") String authorizationHeader,
+                                             HttpServletRequest request) {
+
         try {
-            if (signUpService.isUserActive(id)) {   // ACTIVE 유저 인 경우만
+            Long seq = RequestParseUtil.getSeq(request);
+            if (signUpService.isUserActive(seq)) {   // ACTIVE 유저 인 경우만
                 Map<String, String> imageUrls = s3ImageService.getAllPresignedImageUrls();
                 return ResponseEntity.ok(imageUrls);
             } else {
@@ -97,5 +111,4 @@ public class S3ImgController {
             return ResponseEntity.status(500).body("S3 이미지 URL 전체 조회 실패");
         }
     }
-
 }

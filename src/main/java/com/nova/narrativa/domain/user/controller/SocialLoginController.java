@@ -1,27 +1,29 @@
 package com.nova.narrativa.domain.user.controller;
 
-import com.nova.narrativa.domain.user.dto.SignUp;
+import com.nova.narrativa.domain.user.dto.JWTTokenDTO;
+import com.nova.narrativa.domain.user.util.JWTUtil;
+import com.nova.narrativa.domain.user.dto.SignUpDTO;
 import com.nova.narrativa.domain.user.dto.SocialLoginResult;
 import com.nova.narrativa.domain.user.dto.UserExistenceDto;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.service.*;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 
 @RequestMapping("/login")
 @Slf4j
-//@RequiredArgsConstructor
 @RestController
 public class SocialLoginController {
 
@@ -58,14 +60,23 @@ public class SocialLoginController {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = frontUrl + "/home";
-        Long dbId;
+        User.LoginType kakaoLoginType = User.LoginType.KAKAO;
+
+        // JWTTokenDTO 정의, 로그인 타입 세팅
+        JWTTokenDTO tokenDTO = JWTTokenDTO.builder()
+                                            .loginType(kakaoLoginType)
+                                            .build();
+
         try {
             socialLoginResult = kakaoService.login(code);
+            Long dbId = Long.valueOf(socialLoginResult.getId());
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
                     .userId(socialLoginResult.getId())
-                    .loginType(User.LoginType.KAKAO)
+                    .loginType(kakaoLoginType)
                     .build();
             log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
+
+            tokenDTO.setId(dbId);   // JWTTokenDTO id값 세팅
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
@@ -82,27 +93,54 @@ public class SocialLoginController {
                     log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
                 }
 
+                tokenDTO.setUserId(Long.valueOf(user.getUserId()));
+                tokenDTO.setUsername(user.getUsername());
+                tokenDTO.setProfile_url(user.getProfile_url());
+                tokenDTO.setRole(User.Role.ROLE_USER);
+                tokenDTO.setStatus(User.Status.ACTIVE);
+
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUp signUp = SignUp.builder()
-                        .username(socialLoginResult.getNickname())
-                        .profile_url(socialLoginResult.getProfile_image_url())
-                        .user_id(socialLoginResult.getId())
-                        .login_type(User.LoginType.KAKAO.name())
-                        .build();
+
+                tokenDTO.setUsername(socialLoginResult.getNickname());
+                tokenDTO.setProfile_url(socialLoginResult.getProfile_image_url());
+                tokenDTO.setUserId(Long.valueOf(socialLoginResult.getId()));
 
                 // 회원가입
-                signUpService.register(signUp);
+                signUpService.register(SignUpDTO.builder()
+                                                .user_id(socialLoginResult.getId())
+                                                .username(socialLoginResult.getNickname())
+                                                .profile_url(socialLoginResult.getProfile_image_url())
+                                                .login_type(String.valueOf(kakaoLoginType))
+                                                .build());
 
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = user.getId();
+
+                tokenDTO.setUserId(dbId);
+                tokenDTO.setStatus(user.getStatus());
             }
             log.info("dbId = {}", dbId);
 
+            Map<String, Object> claims = tokenDTO.getClaims();
+            claims.put("id", dbId);
+            log.info("claims (token 넣기 전): {}", claims);
+
+            String accessToken = JWTUtil.generateToken(claims, 60 * 24);
+            String refreshToken = JWTUtil.generateToken(claims, 60 * 24);
+            log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
+
+            claims.put("access_token", accessToken);
+            claims.put("refresh_token", refreshToken);
+
+            log.info("claims (token 넣은 후): {}", claims);
+
+            String encodedClaims = URLEncoder.encode(claims.toString(), StandardCharsets.UTF_8);
+
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
+            String idCookie = String.format("token=%s; domain=%s; SameSite=None; Secure; Path=/", encodedClaims, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
@@ -145,7 +183,7 @@ public class SocialLoginController {
 
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUp signUp = SignUp.builder()
+                SignUpDTO signUp = SignUpDTO.builder()
                         .username(socialLoginResult.getNickname())
                         .profile_url(socialLoginResult.getProfile_image_url())
                         .user_id(socialLoginResult.getId())
@@ -206,7 +244,7 @@ public class SocialLoginController {
 
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUp signUp = SignUp.builder()
+                SignUpDTO signUp = SignUpDTO.builder()
                         .username(socialLoginResult.getNickname())
                         .profile_url(socialLoginResult.getProfile_image_url())
                         .user_id(socialLoginResult.getId())
