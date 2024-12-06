@@ -31,7 +31,6 @@ public class Stage {
     @Column
     private String imageUrl; // 이미지 URL
 
-
     @Lob
     private String choices; // 스토리 선택지
 
@@ -43,4 +42,7 @@ public class Stage {
 
     @Column
     private String story; //
+
+    @Column
+    private Integer probability;
 }

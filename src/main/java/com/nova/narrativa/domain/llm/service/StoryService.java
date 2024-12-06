@@ -214,19 +214,22 @@ public class StoryService {
         }
     }
 
-
-    public String generateEnding(String gameId) {
+    public String generateEnding(String gameId, String genre, String userChoice) {
         System.out.println("[StoryService] Generating ending for game_id: " + gameId);
 
-        Map<String, Object> request = Map.of("game_id", gameId);
+        // 요청 파라미터 설정
+        Map<String, Object> request = Map.of("game_id", gameId, "genre", genre,"user_choice", userChoice);
 
+        // 헤더 설정
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-API-Key", apiKey);
 
+        // 요청 엔티티 설정
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
         try {
+            // FastAPI로부터 응답 받기
             ResponseEntity<String> response = restTemplate.exchange(
                     mlServerUrl + "/api/story/end",
                     HttpMethod.POST,
@@ -234,16 +237,43 @@ public class StoryService {
                     String.class
             );
 
+            // 응답 바디를 Map으로 파싱
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
+            // 응답에 'story'가 없는 경우 예외 처리
             if (!mlResponse.containsKey("story")) {
                 throw new RuntimeException("ML server response is missing 'story' field");
             }
 
-            return objectMapper.writeValueAsString(Map.of(
-                    "story", mlResponse.get("story"),
+            String story = (String) mlResponse.get("story");
+            Integer probability = (Integer) mlResponse.getOrDefault("survival_rate", 0);
+            String gameIdFromResponse = String.valueOf(mlResponse.get("game_id"));
+
+            // Game 객체 찾기 (gameId로 조회)
+            Game game = gameRepository.findById(Long.valueOf(gameIdFromResponse))
+                    .orElseThrow(() -> new RuntimeException("Game not found"));
+
+            // 해당 게임에 대한 스테이지 정보 생성
+            Stage stage = new Stage();
+            stage.setGame(game);
+            stage.setUserChoice(userChoice);
+            stage.setStory(story);
+            stage.setProbability(probability);
+            stage.setEndTime(LocalDateTime.now());
+
+            // Stage 테이블에 저장
+            stageRepository.save(stage);
+
+            // 응답 맵 작성
+            Map<String, Object> responseMap = Map.of(
+                    "story", story,
+                    "survival_rate", probability,
                     "game_id", gameId
-            ));
+            );
+
+            // 응답 맵을 JSON 문자열로 변환하여 반환
+            return objectMapper.writeValueAsString(responseMap);
+
         } catch (Exception e) {
             throw new RuntimeException("Error generating story ending: " + e.getMessage());
         }
