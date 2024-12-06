@@ -1,34 +1,44 @@
 package com.nova.narrativa.domain.llm.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
 public class Stage {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long stageId;
+    private Long stageId; // 스테이지 고유 ID
 
-    @ManyToOne
-    @JoinColumn(name = "game_id")
-    private Game game;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "game_id", nullable = false)
+    private Game game; // Game과 연관 관계 (N:1)
 
-    private Integer stageNumber;
+    @Column(nullable = false)
+    private int stageNumber; // 스테이지 번호
 
-    @Column(columnDefinition = "TEXT")
-    private String previousChoice;
+    @Column
+    private String userChoice; // 사용자가 선택한 내용
 
-    private String userChoice;
+    @Lob
+    private String conversationHistory; // 대화 기록
 
-    private String imageUrl;
+    @Column
+    private String imageUrl; // 이미지 URL
 
-    @Column(columnDefinition = "TEXT")
-    private String conversationHistory;
+    private String prompt; // 프롬프트
+
+    @Lob
+    private String choices; // 스토리 선택지
+
+    @Column
+    private LocalDateTime startTime; // 스테이지 시작 시간
+
+    @Column
+    private LocalDateTime endTime; // 스테이지 종료 시간
 }
