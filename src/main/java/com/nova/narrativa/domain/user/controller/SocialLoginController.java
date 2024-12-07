@@ -35,6 +35,8 @@ public class SocialLoginController {
     private final String frontSignupPart;
     private final String redirectUrl;
     private final String serverDomainUrl;
+    private final int accessTokenTime = 10;         // 10분
+    private final int refresgTokenTime = 60 * 24;    // 1일
 
     public SocialLoginController(KakaoService kakaoService,
                                  GoogleService googleService,
@@ -69,7 +71,7 @@ public class SocialLoginController {
 
         try {
             socialLoginResult = kakaoService.login(code);
-            Long dbId = Long.valueOf(socialLoginResult.getId());
+            String dbId = socialLoginResult.getId();
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
                     .userId(socialLoginResult.getId())
                     .loginType(kakaoLoginType)
@@ -84,7 +86,7 @@ public class SocialLoginController {
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                dbId = user.getId();
+                dbId = String.valueOf(user.getId());
 
                 // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
                 if (user.getStatus() == User.Status.INACTIVE) {
@@ -93,7 +95,7 @@ public class SocialLoginController {
                     log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
                 }
 
-                tokenDTO.setUserId(Long.valueOf(user.getUserId()));
+                tokenDTO.setUserId(user.getUserId());
                 tokenDTO.setUsername(user.getUsername());
                 tokenDTO.setProfile_url(user.getProfile_url());
                 tokenDTO.setRole(User.Role.ROLE_USER);
@@ -101,10 +103,9 @@ public class SocialLoginController {
 
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-
                 tokenDTO.setUsername(socialLoginResult.getNickname());
                 tokenDTO.setProfile_url(socialLoginResult.getProfile_image_url());
-                tokenDTO.setUserId(Long.valueOf(socialLoginResult.getId()));
+                tokenDTO.setUserId(socialLoginResult.getId());
 
                 // 회원가입
                 signUpService.register(SignUp.builder()
@@ -117,7 +118,7 @@ public class SocialLoginController {
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                dbId = user.getId();
+                dbId = String.valueOf(user.getId());
 
                 tokenDTO.setUserId(dbId);
                 tokenDTO.setStatus(user.getStatus());
@@ -128,8 +129,8 @@ public class SocialLoginController {
             claims.put("id", dbId);
             log.info("claims (token 넣기 전): {}", claims);
 
-            String accessToken = JWTUtil.generateToken(claims, 60 * 24);
-            String refreshToken = JWTUtil.generateToken(claims, 60 * 24);
+            String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);
@@ -158,21 +159,29 @@ public class SocialLoginController {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = frontUrl + "/home";
-        Long dbId;
+        User.LoginType googleLoginType = User.LoginType.GOOGLE;
+
+        // JWTTokenDTO 정의, 로그인 타입 세팅
+        JWTTokenDTO tokenDTO = JWTTokenDTO.builder()
+                                            .loginType(googleLoginType)
+                                            .build();
         try {
             socialLoginResult = googleService.login(code);
+            String dbId = socialLoginResult.getId();
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
-                    .userId(socialLoginResult.getId())
-                    .loginType(User.LoginType.GOOGLE)
+                    .userId(dbId)
+                    .loginType(googleLoginType)
                     .build();
             log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
+
+            tokenDTO.setId(dbId);   // JWTTokenDTO id값 세팅
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                dbId = user.getId();
+                dbId = String.valueOf(user.getId());
 
                 // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
                 if (user.getStatus() == User.Status.INACTIVE) {
@@ -181,33 +190,68 @@ public class SocialLoginController {
                     log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
                 }
 
+                tokenDTO.setUserId(user.getUserId());
+                tokenDTO.setUsername(user.getUsername());
+                tokenDTO.setProfile_url(user.getProfile_url());
+                tokenDTO.setRole(User.Role.ROLE_USER);
+                tokenDTO.setStatus(User.Status.ACTIVE);
+
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUp signUp = SignUp.builder()
-                        .username(socialLoginResult.getNickname())
-                        .profile_url(socialLoginResult.getProfile_image_url())
-                        .user_id(socialLoginResult.getId())
-                        .login_type(User.LoginType.GOOGLE.name())
-                        .build();
+                tokenDTO.setUsername(socialLoginResult.getNickname());
+                tokenDTO.setProfile_url(socialLoginResult.getProfile_image_url());
+                tokenDTO.setUserId(socialLoginResult.getId());
 
                 // 회원가입
-                signUpService.register(signUp);
+                signUpService.register(SignUp.builder()
+                        .user_id(socialLoginResult.getId())
+                        .username(socialLoginResult.getNickname())
+                        .profile_url(socialLoginResult.getProfile_image_url())
+                        .login_type(String.valueOf(googleLoginType))
+                        .build());
 
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                dbId = user.getId();
+                dbId = String.valueOf(user.getId());
+
+                tokenDTO.setUserId(String.valueOf(dbId));
+                tokenDTO.setStatus(user.getStatus());
             }
             log.info("dbId = {}", dbId);
 
+            Map<String, Object> claims = tokenDTO.getClaims();
+            claims.put("id", dbId);
+            log.info("claims (token 넣기 전): {}", claims);
+
+            String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
+            log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
+
+            claims.put("access_token", accessToken);
+            claims.put("refresh_token", refreshToken);
+
+            log.info("claims (token 넣은 후): {}", claims);
+
+            String encodedClaims = URLEncoder.encode(claims.toString(), StandardCharsets.UTF_8);
+
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
+            String idCookie = String.format("token=%s; domain=%s; SameSite=None; Secure; Path=/", encodedClaims, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
 
             response.setStatus(HttpServletResponse.SC_CREATED);
         } catch (Exception e) {
+            log.error("google login error: {}", e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                // 파일명, 클래스명, 메서드명, 줄 번호 로깅
+                log.error("파일명: {}, 클래스명: {}, 메서드명: {}, 줄 번호: {}",
+                        element.getFileName(),
+                        element.getClassName(),
+                        element.getMethodName(),
+                        element.getLineNumber());
+            }
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
         log.info("redirectWithParams: {}", redirectWithParams);
@@ -219,21 +263,30 @@ public class SocialLoginController {
         log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = frontUrl + "/home";
-        Long dbId;
+        User.LoginType githubLoginType = User.LoginType.GITHUB;
+
+        // JWTTokenDTO 정의, 로그인 타입 세팅
+        JWTTokenDTO tokenDTO = JWTTokenDTO.builder()
+                                            .loginType(githubLoginType)
+                                            .build();
+
         try {
             socialLoginResult = githubService.login(code);
+            String dbId = socialLoginResult.getId();
             UserExistenceDto userExistenceDto = UserExistenceDto.builder()
                     .userId(socialLoginResult.getId())
-                    .loginType(User.LoginType.GITHUB)
+                    .loginType(githubLoginType)
                     .build();
             log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
+
+            tokenDTO.setId(dbId);   // JWTTokenDTO id값 세팅
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                dbId = user.getId();
+                dbId = String.valueOf(user.getId());
 
                 // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
                 if (user.getStatus() == User.Status.INACTIVE) {
@@ -242,27 +295,53 @@ public class SocialLoginController {
                     log.info("로그인 유저 상태가 INACTIVE에서 ACTIVE로 변경되었습니다.");
                 }
 
+                tokenDTO.setUserId(user.getUserId());
+                tokenDTO.setUsername(user.getUsername());
+                tokenDTO.setProfile_url(user.getProfile_url());
+                tokenDTO.setRole(User.Role.ROLE_USER);
+                tokenDTO.setStatus(User.Status.ACTIVE);
+
                 // DB 조회 후, 해당 유저 존재x -> 자동 회원가입 처리
             } else {
-                SignUp signUp = SignUp.builder()
-                        .username(socialLoginResult.getNickname())
-                        .profile_url(socialLoginResult.getProfile_image_url())
-                        .user_id(socialLoginResult.getId())
-                        .login_type(User.LoginType.GITHUB.name())
-                        .build();
+                tokenDTO.setUsername(socialLoginResult.getNickname());
+                tokenDTO.setProfile_url(socialLoginResult.getProfile_image_url());
+                tokenDTO.setUserId(socialLoginResult.getId());
 
                 // 회원가입
-                signUpService.register(signUp);
+                signUpService.register(SignUp.builder()
+                        .user_id(socialLoginResult.getId())
+                        .username(socialLoginResult.getNickname())
+                        .profile_url(socialLoginResult.getProfile_image_url())
+                        .login_type(String.valueOf(githubLoginType))
+                        .build());
 
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
-                dbId = user.getId();
+                dbId = String.valueOf(user.getId());
+
+                tokenDTO.setUserId(String.valueOf(dbId));
+                tokenDTO.setStatus(user.getStatus());
             }
             log.info("dbId = {}", dbId);
 
+            Map<String, Object> claims = tokenDTO.getClaims();
+            claims.put("id", dbId);
+            log.info("claims (token 넣기 전): {}", claims);
+
+            String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
+            log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
+
+            claims.put("access_token", accessToken);
+            claims.put("refresh_token", refreshToken);
+
+            log.info("claims (token 넣은 후): {}", claims);
+
+            String encodedClaims = URLEncoder.encode(claims.toString(), StandardCharsets.UTF_8);
+
             // Session Cookie 생성 (브라우저 닫으면 쿠키 삭제)
-            String idCookie = String.format("id=%d; domain=%s; SameSite=None; Secure; Path=/", dbId, serverDomainUrl);
+            String idCookie = String.format("token=%s; domain=%s; SameSite=None; Secure; Path=/", encodedClaims, serverDomainUrl);
 
             log.info("idCookie: {}", idCookie);
             response.setHeader("Set-Cookie", idCookie);
