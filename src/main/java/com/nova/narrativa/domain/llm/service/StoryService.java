@@ -296,4 +296,40 @@ public class StoryService {
         return gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
     }
+
+    // 히스토리 조회
+    public Map<String, Object> getGameStagesForUser(Long userId) {
+        try {
+            // userId로 유저 조회
+            logger.info("[Service] Fetching user with userId: {}", userId);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + userId));
+
+            // 유저의 게임 조회
+            List<Game> userGames = gameRepository.findByUser_Id(user.getId());
+            if (userGames.isEmpty()) {
+                throw new EntityNotFoundException("No games found for the given userId: " + userId);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            for (Game game : userGames) {
+                List<Stage> stages = stageRepository.findByGame_GameId(game.getGameId());
+                for (Stage stage : stages) {
+                    if (stage.getStageNumber() == 6) {
+                        result.put("story", stage.getStory());
+                    } else if (stage.getStageNumber() == 5) {
+                        result.put("imageUrl", stage.getImageUrl());
+                    }
+                }
+            }
+
+            // 반환 데이터 로그
+            logger.info("[Service] Returning data: {}", result);
+            return result;
+        } catch (Exception e) {
+            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", userId, e.getMessage());
+            throw new RuntimeException("Error fetching game stages: " + e.getMessage());
+        }
+    }
+
 }
