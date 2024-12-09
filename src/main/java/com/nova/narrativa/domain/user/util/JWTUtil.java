@@ -35,31 +35,43 @@ public class JWTUtil {
         if (JWTUtil.key == null)  throw new RuntimeException("JWT TOKEN Key가 NULL 입니다.");
         if (JWTUtil.key.length() < 32)  throw new RuntimeException("JWT TOKEN 생성시 키 값은 32자 이상이어야 합니다.");
         SecretKey secretKey;
+        String jwtStr;
 
         try {
             secretKey = Keys.hmacShaKeyFor(JWTUtil.key.getBytes(StandardCharsets.UTF_8));
             log.info("secretKey: {}", secretKey);
 
+            log.info("IssuedAt: {}, Expiration: {}",
+                    Date.from(ZonedDateTime.now().toInstant()),
+                    Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()));
+
+            if (secretKey.getEncoded().length < 32) {
+                throw new IllegalArgumentException("secretKey의 크기가 32바이트 미만입니다.");
+            }
+
+            jwtStr = Jwts.builder()
+                    .setHeader(Map.of("typ", "JWT"))
+                    .setClaims(valueMap)
+                    .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
+                    .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()))
+                    .signWith(secretKey)
+                    .compact();
+
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
-
-        String jwtStr = Jwts.builder()
-                .setHeader(Map.of("typ", "JWT"))
-                .setClaims(valueMap)
-                .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
-                .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()))
-                .signWith(secretKey)
-                .compact();
         log.info("jwtStr: {}", jwtStr);
+        if (jwtStr == null || jwtStr.isEmpty()) {
+            throw new RuntimeException("JWT 문자열 생성에 실패했습니다.");
+        }
 
         return jwtStr;
     }
 
     // JWT 문자열 검증
-    public static Map<String, Object> validateToken(String token) throws Exception{
+    public static Map<String, Object> validateToken(String token) {
 
-        Map<String, Object> claim = null;
+        Map<String, Object> claim;
 
         try {
             SecretKey secretKey = Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8));
