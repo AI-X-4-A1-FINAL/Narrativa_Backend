@@ -81,6 +81,7 @@ public class JWTUtil {
                     .build()
                     .parseClaimsJws(token)  // 피싱 및 검증, 실패 시 에러
                     .getBody();
+
         } catch (WeakKeyException e) {
             log.info("error: {}", e.getMessage());
             throw new RuntimeException("WeakKeyException");
