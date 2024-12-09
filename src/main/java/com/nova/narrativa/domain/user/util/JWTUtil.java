@@ -40,18 +40,18 @@ public class JWTUtil {
             secretKey = Keys.hmacShaKeyFor(JWTUtil.key.getBytes(StandardCharsets.UTF_8));
             log.info("secretKey: {}", secretKey);
 
+            String jwtStr = Jwts.builder()
+                    .setHeader(Map.of("typ", "JWT"))
+                    .setClaims(valueMap)
+                    .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
+                    .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()))
+                    .signWith(secretKey)
+                    .compact();
+            log.info("jwtStr: {}", jwtStr);
+
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
-
-        String jwtStr = Jwts.builder()
-                .setHeader(Map.of("typ", "JWT"))
-                .setClaims(valueMap)
-                .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
-                .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()))
-                .signWith(secretKey)
-                .compact();
-        log.info("jwtStr: {}", jwtStr);
 
         return jwtStr;
     }
