@@ -35,7 +35,14 @@ public class ImageController {
 
         try {
             // 이미지 생성 요청을 서비스로 전달하고, 생성된 이미지 URL을 반환
-            ResponseEntity<String> imageUrl = imageService.generateImage(request.getPrompt(), request.getSize(), request.getN(), request.getGenre());
+            ResponseEntity<String> imageUrl = imageService.generateImage(
+                    request.getGameId(),
+                    request.getStageNumber(),
+                    request.getPrompt(),
+                    request.getSize(),
+                    request.getN(),
+                    request.getGenre()
+            );
 
             // 생성된 이미지 URL을 응답으로 반환
             return ResponseEntity.ok()

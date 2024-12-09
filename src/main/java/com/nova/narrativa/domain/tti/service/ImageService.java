@@ -4,10 +4,19 @@ package com.nova.narrativa.domain.tti.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
+import com.nova.narrativa.domain.llm.entity.Game;
+import com.nova.narrativa.domain.llm.entity.Stage;
+import com.nova.narrativa.domain.llm.repository.GameRepository;
+import com.nova.narrativa.domain.llm.repository.StageRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -38,6 +47,9 @@ public class ImageService {
     private final S3Presigner s3Presigner;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final StageRepository stageRepository;
+    private final GameRepository gameRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ImageService.class);
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
@@ -47,8 +59,6 @@ public class ImageService {
 
     @Value("${aws.s3.images-bucket}")
     private String bucketName;
-
-
 
     public List<String> getImageFiles() {
 
@@ -93,16 +103,20 @@ public class ImageService {
         return generatePresignedUrl(randomImageFile);
     }
 
-
-    public ResponseEntity<String> generateImage(String prompt, String size, int n, String genre) {
+    public ResponseEntity<String> generateImage(Long gameId, int stageNumber, String prompt, String size, int n, String genre) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
+        // gameId를 String으로 변환
+        String gameIdStr = String.valueOf(gameId);
 
         Map<String, Object> requestPayload = Map.of(
+                "gameId", gameIdStr,  // gameId 추가
+                "stageNumber", stageNumber,  // stageNumber 추가
                 "prompt", prompt,
                 "size", size,
                 "n", n,
                 "genre", genre
         );
+        System.out.println("Request Payload: " + requestPayload); // 이 부분에서 요청 본문 확인
 
         // HTTP 헤더에 API 키 추가
         HttpHeaders headers = new HttpHeaders();
@@ -128,9 +142,27 @@ public class ImageService {
             String jsonString = new String(responseData, StandardCharsets.UTF_8);
             JsonNode jsonNode = objectMapper.readTree(jsonString);
             String imageUrl = jsonNode.get("imageUrl").asText();
+            logger.info("Generated Image URL: {}", imageUrl); // 로그 출력
+
+            // 해당 gameId와 stageNumber를 기준으로 Stage 엔터티 조회
+            Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
+                    .orElseGet(() -> {
+                        // Stage가 없으면 새로 생성
+                        Stage newStage = new Stage();
+                        newStage.setGame(gameRepository.findById(gameId).orElseThrow(() -> new EntityNotFoundException("Game not found")));
+                        newStage.setStageNumber(stageNumber);
+                        newStage.setImageUrl(imageUrl); // 새로 생성된 Stage에 imageUrl 추가
+                        return stageRepository.save(newStage);  // 새 Stage 저장
+                    });
+
+            // imageUrl이 이미 저장되어 있지 않다면 업데이트
+            if (stage.getImageUrl() == null || stage.getImageUrl().isEmpty()) {
+                stage.setImageUrl(imageUrl);
+                stageRepository.save(stage);  // Stage 엔티티 업데이트
+            }
 
             String s3Key = uploadJsonToS3(jsonString);
-
+            // Stage 엔티티에 imageUrl 업데이트
             return ResponseEntity.ok(imageUrl);
 
         } catch (Exception e) {
