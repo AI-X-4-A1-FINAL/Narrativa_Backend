@@ -116,7 +116,7 @@ public class ImageService {
                 "n", n,
                 "genre", genre
         );
-        System.out.println("Request Payload: " + requestPayload); // 이 부분에서 요청 본문 확인
+//        System.out.println("Request Payload: " + requestPayload); // 이 부분에서 요청 본문 확인
 
         // HTTP 헤더에 API 키 추가
         HttpHeaders headers = new HttpHeaders();
@@ -142,7 +142,7 @@ public class ImageService {
             String jsonString = new String(responseData, StandardCharsets.UTF_8);
             JsonNode jsonNode = objectMapper.readTree(jsonString);
             String imageUrl = jsonNode.get("imageUrl").asText();
-            logger.info("Generated Image URL: {}", imageUrl); // 로그 출력
+//            logger.info("Generated Image URL: {}", imageUrl); // 로그 출력
 
             // 해당 gameId와 stageNumber를 기준으로 Stage 엔터티 조회
             Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
@@ -187,7 +187,7 @@ public class ImageService {
             S3Client s3Client = S3Client.create();
             s3Client.putObject(putObjectRequest, RequestBody.fromString(jsonString));
 
-            System.out.println("Uploaded JSON to S3 with key: " + fileName);
+//            System.out.println("Uploaded JSON to S3 with key: " + fileName);
             return fileName;
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload JSON to S3", e);
