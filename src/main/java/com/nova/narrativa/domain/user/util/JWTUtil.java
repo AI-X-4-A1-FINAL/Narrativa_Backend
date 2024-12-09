@@ -41,6 +41,7 @@ public class JWTUtil {
             secretKey = Keys.hmacShaKeyFor(JWTUtil.key.getBytes(StandardCharsets.UTF_8));
             log.info("secretKey: {}", secretKey);
 
+
             jwtStr = Jwts.builder()
                     .setHeader(Map.of("typ", "JWT"))
                     .setClaims(valueMap)
@@ -52,6 +53,7 @@ public class JWTUtil {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+
         log.info("jwtStr: {}", jwtStr);
 
         return jwtStr;
