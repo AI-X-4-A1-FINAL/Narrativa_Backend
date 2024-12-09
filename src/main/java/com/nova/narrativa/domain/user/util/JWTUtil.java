@@ -41,6 +41,13 @@ public class JWTUtil {
             secretKey = Keys.hmacShaKeyFor(JWTUtil.key.getBytes(StandardCharsets.UTF_8));
             log.info("secretKey: {}", secretKey);
 
+            log.info("IssuedAt: {}, Expiration: {}",
+                    Date.from(ZonedDateTime.now().toInstant()),
+                    Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()));
+
+            if (secretKey.getEncoded().length < 32) {
+                throw new IllegalArgumentException("secretKey의 크기가 32바이트 미만입니다.");
+            }
 
             jwtStr = Jwts.builder()
                     .setHeader(Map.of("typ", "JWT"))
@@ -53,8 +60,10 @@ public class JWTUtil {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
-
         log.info("jwtStr: {}", jwtStr);
+        if (jwtStr == null || jwtStr.isEmpty()) {
+            throw new RuntimeException("JWT 문자열 생성에 실패했습니다.");
+        }
 
         return jwtStr;
     }
