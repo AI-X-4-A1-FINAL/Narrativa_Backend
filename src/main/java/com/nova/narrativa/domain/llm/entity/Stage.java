@@ -28,7 +28,7 @@ public class Stage {
     @Lob
     private String conversationHistory; // 대화 기록
 
-    @Column
+    @Column(name = "image_url", length = 1000)
     private String imageUrl; // 이미지 URL
 
     @Lob

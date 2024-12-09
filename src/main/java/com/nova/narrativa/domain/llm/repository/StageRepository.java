@@ -15,4 +15,8 @@ public interface StageRepository extends JpaRepository<Stage, Long> {
 
     // 가장 높은 스테이지 번호를 가진 스테이지 조회 (특정 게임)
     Optional<Stage> findTopByGame_GameIdOrderByStageNumberDesc(Long gameId);
+
+    // gameId와 stageNumber로 Stage 엔터티 찾기
+    Optional<Stage> findByGame_GameIdAndStageNumber(Long gameId, int stageNumber);
+
 }
