@@ -236,7 +236,8 @@ src/main/resources/application-local.yml
 src/main/resources/application-deploy.yml
 src/main/resources/application-development.yml
 
-config
+# config 폴더 더이상 .gitignore 등록 x
+# config
 
 # .env 파일 무시
 src/main/resources/.env
