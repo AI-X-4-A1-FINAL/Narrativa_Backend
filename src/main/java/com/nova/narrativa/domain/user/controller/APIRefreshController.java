@@ -37,7 +37,7 @@ public class APIRefreshController {
         String newAccessToken = JWTUtil.generateToken(claims, 10);
         String newRefreshToken = checkTime((Integer) claims.get("exp")) == true ? JWTUtil.generateToken(claims, 60 * 24) : refreshToken;
 
-        return Map.of("accessToken", accessToken, "refreshToken", refreshToken);
+        return Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken);
     }
 
     // 시간이 1시간 미만으로 남았다면
