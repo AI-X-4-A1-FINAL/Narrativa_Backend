@@ -65,7 +65,7 @@ public class StoryController {
     public ResponseEntity<String> generateEnding(@RequestBody Map<String, Object> request) {
         try {
             // 로그 출력해서 데이터 확인
-            System.out.println("[Controller] Received request: " + request);
+//            System.out.println("[Controller] Received request: " + request);
 
             // Map에서 데이터 추출
             String gameId = String.valueOf(request.get("gameId"));
@@ -75,7 +75,7 @@ public class StoryController {
             // StoryService 호출
             String storyResponse = storyService.generateEnding(gameId, genre, userChoice);
 
-            System.out.println("[Controller] Response from service: " + storyResponse); // 응답 로그 추가
+//            System.out.println("[Controller] Response from service: " + storyResponse); // 응답 로그 추가
 
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {

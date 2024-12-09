@@ -7,12 +7,14 @@ import com.nova.narrativa.domain.llm.repository.GameRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -48,6 +50,7 @@ public class StoryService {
         this.objectMapper = objectMapper;
     }
 
+    @Transactional
     public Map<String, Object> startGame(String genre, List<String> tags, Long userId) {
         Map<String, Object> request = new HashMap<>();
         request.put("genre", genre);
@@ -109,8 +112,9 @@ public class StoryService {
         }
     }
 
+    @Transactional
     public String continueStory(String gameId, String genre, String userChoice) {
-        System.out.println("[StoryService] Continuing story with game_id: " + gameId);
+//        System.out.println("[StoryService] Continuing story with game_id: " + gameId);
 
         // FastAPI로 보낼 요청 데이터 준비
         Map<String, Object> request = Map.of(
@@ -136,7 +140,7 @@ public class StoryService {
 
             // FastAPI에서 응답받은 JSON 파싱
             Map<String, Object> mlResponse = new ObjectMapper().readValue(response.getBody(), Map.class);
-            System.out.println("[StoryService] Response from ML server: " + mlResponse);
+//            System.out.println("[StoryService] Response from ML server: " + mlResponse);
 
             // Story와 choices 값 추출
             String story = (String) mlResponse.get("story");
@@ -214,6 +218,7 @@ public class StoryService {
         }
     }
 
+    @Transactional
     public String generateEnding(String gameId, String genre, String userChoice) {
         System.out.println("[StoryService] Generating ending for game_id: " + gameId);
 
@@ -240,10 +245,12 @@ public class StoryService {
             // 응답 바디를 Map으로 파싱
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
+            System.out.println("엔딩 받아오는 값" + mlResponse);
             // 응답에 'story'가 없는 경우 예외 처리
             if (!mlResponse.containsKey("story")) {
                 throw new RuntimeException("ML server response is missing 'story' field");
             }
+
 
             String story = (String) mlResponse.get("story");
             Integer probability = (Integer) mlResponse.getOrDefault("survival_rate", 0);
@@ -257,6 +264,7 @@ public class StoryService {
             Stage stage = new Stage();
             stage.setGame(game);
             stage.setUserChoice(userChoice);
+            stage.setStageNumber(6);
             stage.setStory(story);
             stage.setProbability(probability);
             stage.setEndTime(LocalDateTime.now());
