@@ -62,9 +62,6 @@ public class StoryService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-//        logger.info("Sending request to ML server: {}", request); // 요청 로그
-//        logger.info("Headers: {}", headers); // 헤더 로그
-
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     mlServerUrl + "/api/story/start",
@@ -73,7 +70,7 @@ public class StoryService {
                     String.class
             );
 
-            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
+//            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
 
             // 응답 처리
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
@@ -213,14 +210,14 @@ public class StoryService {
             return new ObjectMapper().writeValueAsString(result);  // JSON으로 변환하여 반환
 
         } catch (Exception e) {
-            System.err.println("[StoryService] Error: " + e.getMessage());
+//            System.err.println("[StoryService] Error: " + e.getMessage());
             throw new RuntimeException("Error communicating with ML server: " + e.getMessage());
         }
     }
 
     @Transactional
     public String generateEnding(String gameId, String genre, String userChoice) {
-        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
+//        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
 
         // 요청 파라미터 설정
         Map<String, Object> request = Map.of("game_id", gameId, "genre", genre,"user_choice", userChoice);
@@ -245,7 +242,7 @@ public class StoryService {
             // 응답 바디를 Map으로 파싱
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
-            System.out.println("엔딩 받아오는 값" + mlResponse);
+//            System.out.println("엔딩 받아오는 값" + mlResponse);
             // 응답에 'story'가 없는 경우 예외 처리
             if (!mlResponse.containsKey("story")) {
                 throw new RuntimeException("ML server response is missing 'story' field");
