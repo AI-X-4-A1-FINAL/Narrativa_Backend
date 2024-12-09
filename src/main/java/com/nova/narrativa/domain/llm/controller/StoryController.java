@@ -85,4 +85,24 @@ public class StoryController {
         }
     }
 
+    @GetMapping("/user-games/{userId}")
+    public ResponseEntity<Map<String, Object>> getUserGameStages(@PathVariable("userId") Long userId) {
+        try {
+            // 로그 출력
+            System.out.println("[Controller] Received request with userId: " + userId);
+
+            // 서비스 호출
+            Map<String, Object> result = storyService.getGameStagesForUser(userId);
+
+            // 반환 데이터 로그
+            System.out.println("[Controller] Returning response: " + result);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("[Controller] Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error: " + e.getMessage()));
+        }
+    }
+
 }

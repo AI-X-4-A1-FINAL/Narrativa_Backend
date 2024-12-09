@@ -62,9 +62,6 @@ public class StoryService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-//        logger.info("Sending request to ML server: {}", request); // 요청 로그
-//        logger.info("Headers: {}", headers); // 헤더 로그
-
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     mlServerUrl + "/api/story/start",
@@ -73,7 +70,7 @@ public class StoryService {
                     String.class
             );
 
-            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
+//            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
 
             // 응답 처리
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
@@ -213,14 +210,14 @@ public class StoryService {
             return new ObjectMapper().writeValueAsString(result);  // JSON으로 변환하여 반환
 
         } catch (Exception e) {
-            System.err.println("[StoryService] Error: " + e.getMessage());
+//            System.err.println("[StoryService] Error: " + e.getMessage());
             throw new RuntimeException("Error communicating with ML server: " + e.getMessage());
         }
     }
 
     @Transactional
     public String generateEnding(String gameId, String genre, String userChoice) {
-        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
+//        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
 
         // 요청 파라미터 설정
         Map<String, Object> request = Map.of("game_id", gameId, "genre", genre,"user_choice", userChoice);
@@ -245,7 +242,7 @@ public class StoryService {
             // 응답 바디를 Map으로 파싱
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
-            System.out.println("엔딩 받아오는 값" + mlResponse);
+//            System.out.println("엔딩 받아오는 값" + mlResponse);
             // 응답에 'story'가 없는 경우 예외 처리
             if (!mlResponse.containsKey("story")) {
                 throw new RuntimeException("ML server response is missing 'story' field");
@@ -299,4 +296,40 @@ public class StoryService {
         return gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
     }
+
+    // 히스토리 조회
+    public Map<String, Object> getGameStagesForUser(Long userId) {
+        try {
+            // userId로 유저 조회
+            logger.info("[Service] Fetching user with userId: {}", userId);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + userId));
+
+            // 유저의 게임 조회
+            List<Game> userGames = gameRepository.findByUser_Id(user.getId());
+            if (userGames.isEmpty()) {
+                throw new EntityNotFoundException("No games found for the given userId: " + userId);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            for (Game game : userGames) {
+                List<Stage> stages = stageRepository.findByGame_GameId(game.getGameId());
+                for (Stage stage : stages) {
+                    if (stage.getStageNumber() == 6) {
+                        result.put("story", stage.getStory());
+                    } else if (stage.getStageNumber() == 5) {
+                        result.put("imageUrl", stage.getImageUrl());
+                    }
+                }
+            }
+
+            // 반환 데이터 로그
+            logger.info("[Service] Returning data: {}", result);
+            return result;
+        } catch (Exception e) {
+            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", userId, e.getMessage());
+            throw new RuntimeException("Error fetching game stages: " + e.getMessage());
+        }
+    }
+
 }
