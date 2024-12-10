@@ -204,7 +204,6 @@ public class ImageService {
 
     // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
     public String getImageUrlFromS3(String fullFilePath) throws IOException {
-        String bucketName = "images-storage-buckets"; // S3 버킷 이름
         String filePath = fullFilePath.substring(bucketName.length() + 1); // 버킷 이름을 제외한 경로 부분만 분리
 
         logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
@@ -241,6 +240,5 @@ public class ImageService {
             }
         }
     }
-
 
 }

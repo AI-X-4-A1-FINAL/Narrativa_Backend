@@ -95,12 +95,12 @@ public class StoryController {
     public ResponseEntity<?> getUserGameStages(@RequestBody Map<String, Object> request) {
         try {
             Long userId = Long.valueOf(String.valueOf(request.get("userId")));
-            logger.info("[컨트롤러] 요청받은 userId: {}", userId);
+//            logger.info("[컨트롤러] 요청받은 userId: {}", userId);
 
             // 서비스 호출
             List<Map<String, Object>> result = storyService.getGameStagesForUser(userId);
 
-            logger.info("[컨트롤러] 서비스에서 받은 {}", result);
+//            logger.info("[컨트롤러] 서비스에서 받은 {}", result);
             return ResponseEntity.ok(result);
         } catch (EntityNotFoundException e) {
             logger.warn("[컨트롤러] Entity not found: {}", e.getMessage());

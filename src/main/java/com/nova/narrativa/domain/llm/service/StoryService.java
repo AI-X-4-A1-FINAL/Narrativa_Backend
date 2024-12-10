@@ -34,8 +34,6 @@ public class StoryService {
     private static final Logger logger = LoggerFactory.getLogger(StoryService.class);
     private final ImageService imageService;
 
-    private final String s3BucketName = "images-storage-buckets";
-
     @Value("${environments.narrativa-ml.url}")
     private String mlServerUrl;
 
