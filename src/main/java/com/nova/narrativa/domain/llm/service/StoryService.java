@@ -18,10 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class StoryService {
@@ -42,7 +39,7 @@ public class StoryService {
     @Autowired
     public StoryService(RestTemplate restTemplate, GameRepository gameRepository,
                         UserRepository userRepository, StageRepository stageRepository,
-                       ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
@@ -298,38 +295,62 @@ public class StoryService {
     }
 
     // 히스토리 조회
-    public Map<String, Object> getGameStagesForUser(Long userId) {
+    public List<Map<String, Object>> getGameStagesForUser(Long Id) {
         try {
-            // userId로 유저 조회
-            logger.info("[Service] Fetching user with userId: {}", userId);
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + userId));
+            logger.info("[Service] Fetching user with userId: {}", Id);
 
-            // 유저의 게임 조회
+            // userId로 유저 조회
+            User user = userRepository.findById(Id)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + Id));
+
+            logger.info("[Service] Found user: {}", user.getUsername());
+
+            // 유저의 모든 게임 조회
             List<Game> userGames = gameRepository.findByUser_Id(user.getId());
             if (userGames.isEmpty()) {
-                throw new EntityNotFoundException("No games found for the given userId: " + userId);
+                logger.warn("[서비스] 유저Id를 찾을 수 없음.: {}", Id);
+                throw new EntityNotFoundException("No games found for the given userId: " + Id);
             }
 
-            Map<String, Object> result = new HashMap<>();
+            logger.info("[Service] Found {} games for userId: {}", userGames.size(), Id);
+
+            List<Map<String, Object>> resultList = new ArrayList<>();
+
+            // 각 게임의 스테이지 필터링 및 결과 생성
             for (Game game : userGames) {
+                logger.info("[Service] Processing gameId: {}", game.getGameId());
+
                 List<Stage> stages = stageRepository.findByGame_GameId(game.getGameId());
-                for (Stage stage : stages) {
-                    if (stage.getStageNumber() == 6) {
-                        result.put("story", stage.getStory());
-                    } else if (stage.getStageNumber() == 5) {
-                        result.put("imageUrl", stage.getImageUrl());
+
+                // stageNumber가 6까지 저장된 게임인지 확인
+                boolean hasStage6 = stages.stream().anyMatch(stage -> stage.getStageNumber() == 6);
+
+                if (hasStage6) {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("gameId", game.getGameId());
+
+                    for (Stage stage : stages) {
+                        if (stage.getStageNumber() == 6) {
+                            result.put("story", stage.getStory());
+                        } else if (stage.getStageNumber() == 5) {
+                            result.put("imageUrl", stage.getImageUrl());
+                        }
                     }
+
+                    logger.info("[Service] Result for gameId {}: {}", game.getGameId(), result);
+                    resultList.add(result);
+                } else {
+                    logger.info("[Service] GameId {} does not have stageNumber 6", game.getGameId());
                 }
             }
 
-            // 반환 데이터 로그
-            logger.info("[Service] Returning data: {}", result);
-            return result;
+            logger.info("[Service] Returning resultList with size: {}", resultList.size());
+            return resultList;
         } catch (Exception e) {
-            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", userId, e.getMessage());
+            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", Id, e.getMessage());
             throw new RuntimeException("Error fetching game stages: " + e.getMessage());
         }
     }
+
 
 }
