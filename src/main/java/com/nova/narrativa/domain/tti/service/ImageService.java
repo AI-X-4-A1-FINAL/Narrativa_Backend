@@ -22,8 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -204,18 +203,33 @@ public class ImageService {
     }
 
     // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
-    public String getImageUrlFromS3(String bucketName, String filePath) throws IOException {
+    public String getImageUrlFromS3(String fullFilePath) throws IOException {
+        String bucketName = "images-storage-buckets"; // S3 버킷 이름
+        String filePath = fullFilePath.substring(bucketName.length() + 1); // 버킷 이름을 제외한 경로 부분만 분리
+
         logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
 
-        // 파일 존재 여부 확인
-        if (!amazonS3.doesObjectExist(bucketName, filePath)) {
+        // S3 객체가 존재하는지 확인
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                .bucket(bucketName)
+                .key(filePath)  // 경로에서 버킷 이름을 제외한 부분만 사용
+                .build();
+
+        try {
+            // 객체가 존재하면 헤드 요청이 성공
+            s3Client.headObject(headObjectRequest);
+        } catch (NoSuchKeyException e) {
+            // 파일이 존재하지 않으면 예외 처리
             throw new FileNotFoundException("File does not exist in S3 at path: " + filePath);
         }
 
-        // S3에서 파일 가져오기
-        S3Object s3Object = amazonS3.getObject(bucketName, filePath);
+        // 파일이 존재하면 S3에서 가져오기
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(filePath)  // 경로에서 버킷 이름을 제외한 부분만 사용
+                .build();
 
-        try (InputStream inputStream = s3Object.getObjectContent()) {
+        try (InputStream inputStream = s3Client.getObject(getObjectRequest)) {
             // JSON 파싱
             Map<String, Object> jsonData = objectMapper.readValue(inputStream, Map.class);
             if (jsonData.containsKey("imageUrl")) {
