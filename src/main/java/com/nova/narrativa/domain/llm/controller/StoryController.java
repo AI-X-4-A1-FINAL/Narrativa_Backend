@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -28,66 +29,30 @@ public class StoryController {
     }
 
     @PostMapping("/start")
-    public ResponseEntity<Map<String, Object>> startGame(@Valid @RequestBody StoryStartRequest request) {
-        try {
-            Map<String, Object> storyResponse = storyService.startGame(
-                    request.getGenre(),
-                    request.getTags(),
-                    request.getUserId()
-            );
-            return ResponseEntity.ok(storyResponse);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error: " + e.getMessage()));
-        }
+    public Mono<Map<String, Object>> startGame(@Valid @RequestBody StoryStartRequest request) {
+        return storyService.startGame(
+                request.getGenre(),
+                request.getTags(),
+                request.getUserId()
+        );
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<String> continueStory(@RequestBody Map<String, Object> request) {
-//        System.out.println("[프론트에서 /chat으로 보낸 값]: " + request);
-        try {
-            // Map에서 데이터 추출
-            Long gameId = Long.valueOf(String.valueOf(request.get("gameId")));
-            String genre = String.valueOf(request.get("genre"));
-            String userChoice = String.valueOf(request.get("userSelect"));
+    public Mono<String> continueStory(@RequestBody Map<String, Object> request) {
+        Long gameId = Long.valueOf(String.valueOf(request.get("gameId")));
+        String genre = String.valueOf(request.get("genre"));
+        String userChoice = String.valueOf(request.get("userSelect"));
 
-            // StoryService 호출
-            String storyResponse = storyService.continueStory(
-                    gameId.toString(),
-                    genre,
-                    userChoice
-            );
-//            System.out.println("[프론트 보내는 값]" + storyResponse); // 응답 로그 추가
-
-            return ResponseEntity.ok(storyResponse);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
-        }
+        return storyService.continueStory(gameId.toString(), genre, userChoice);
     }
 
     @PostMapping("/end")
-    public ResponseEntity<String> generateEnding(@RequestBody Map<String, Object> request) {
-        try {
-            // 로그 출력해서 데이터 확인
-//            System.out.println("[Controller] Received request: " + request);
+    public Mono<String> generateEnding(@RequestBody Map<String, Object> request) {
+        String gameId = String.valueOf(request.get("gameId"));
+        String genre = String.valueOf(request.get("genre"));
+        String userChoice = String.valueOf(request.get("userSelect"));
 
-            // Map에서 데이터 추출
-            String gameId = String.valueOf(request.get("gameId"));
-            String genre = String.valueOf(request.get("genre"));
-            String userChoice = String.valueOf(request.get("userSelect"));
-
-            // StoryService 호출
-            String storyResponse = storyService.generateEnding(gameId, genre, userChoice);
-
-//            System.out.println("[Controller] Response from service: " + storyResponse); // 응답 로그 추가
-
-            return ResponseEntity.ok(storyResponse);
-        } catch (Exception e) {
-            System.err.println("[Controller] Error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
-        }
+        return storyService.generateEnding(gameId, genre, userChoice);
     }
 
     // 히스토리 조회용 메서드
@@ -95,12 +60,13 @@ public class StoryController {
     public ResponseEntity<?> getUserGameStages(@RequestBody Map<String, Object> request) {
         try {
             Long userId = Long.valueOf(String.valueOf(request.get("userId")));
-            logger.info("[컨트롤러] 요청받은 userId: {}", userId);
+//            logger.info("[컨트롤러] 요청받은 userId: {}", userId);
 
             // 서비스 호출
             List<Map<String, Object>> result = storyService.getGameStagesForUser(userId);
 
-            logger.info("[컨트롤러] 서비스에서 받은 {}", result);
+//            logger.info("[컨트롤러] 서비스에서 받은 {}", result);
+
             return ResponseEntity.ok(result);
         } catch (EntityNotFoundException e) {
             logger.warn("[컨트롤러] Entity not found: {}", e.getMessage());
