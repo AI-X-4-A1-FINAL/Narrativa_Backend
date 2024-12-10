@@ -11,8 +11,8 @@ import java.util.Map;
 @Builder
 public class JWTTokenDTO {
 
-    private Long id;
-    private Long userId;
+    private String id;
+    private String userId;
     private String username;
     private String profile_url;
     private User.Role role;

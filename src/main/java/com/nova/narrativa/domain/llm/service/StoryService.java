@@ -7,12 +7,14 @@ import com.nova.narrativa.domain.llm.repository.GameRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -48,6 +50,7 @@ public class StoryService {
         this.objectMapper = objectMapper;
     }
 
+    @Transactional
     public Map<String, Object> startGame(String genre, List<String> tags, Long userId) {
         Map<String, Object> request = new HashMap<>();
         request.put("genre", genre);
@@ -59,9 +62,6 @@ public class StoryService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-//        logger.info("Sending request to ML server: {}", request); // 요청 로그
-//        logger.info("Headers: {}", headers); // 헤더 로그
-
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     mlServerUrl + "/api/story/start",
@@ -70,7 +70,7 @@ public class StoryService {
                     String.class
             );
 
-            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
+//            logger.info("Received response from ML server: {}", response.getBody()); // 응답 로그
 
             // 응답 처리
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
@@ -109,8 +109,9 @@ public class StoryService {
         }
     }
 
+    @Transactional
     public String continueStory(String gameId, String genre, String userChoice) {
-        System.out.println("[StoryService] Continuing story with game_id: " + gameId);
+//        System.out.println("[StoryService] Continuing story with game_id: " + gameId);
 
         // FastAPI로 보낼 요청 데이터 준비
         Map<String, Object> request = Map.of(
@@ -136,7 +137,7 @@ public class StoryService {
 
             // FastAPI에서 응답받은 JSON 파싱
             Map<String, Object> mlResponse = new ObjectMapper().readValue(response.getBody(), Map.class);
-            System.out.println("[StoryService] Response from ML server: " + mlResponse);
+//            System.out.println("[StoryService] Response from ML server: " + mlResponse);
 
             // Story와 choices 값 추출
             String story = (String) mlResponse.get("story");
@@ -209,13 +210,14 @@ public class StoryService {
             return new ObjectMapper().writeValueAsString(result);  // JSON으로 변환하여 반환
 
         } catch (Exception e) {
-            System.err.println("[StoryService] Error: " + e.getMessage());
+//            System.err.println("[StoryService] Error: " + e.getMessage());
             throw new RuntimeException("Error communicating with ML server: " + e.getMessage());
         }
     }
 
+    @Transactional
     public String generateEnding(String gameId, String genre, String userChoice) {
-        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
+//        System.out.println("[StoryService] Generating ending for game_id: " + gameId);
 
         // 요청 파라미터 설정
         Map<String, Object> request = Map.of("game_id", gameId, "genre", genre,"user_choice", userChoice);
@@ -240,10 +242,12 @@ public class StoryService {
             // 응답 바디를 Map으로 파싱
             Map<String, Object> mlResponse = objectMapper.readValue(response.getBody(), Map.class);
 
+//            System.out.println("엔딩 받아오는 값" + mlResponse);
             // 응답에 'story'가 없는 경우 예외 처리
             if (!mlResponse.containsKey("story")) {
                 throw new RuntimeException("ML server response is missing 'story' field");
             }
+
 
             String story = (String) mlResponse.get("story");
             Integer probability = (Integer) mlResponse.getOrDefault("survival_rate", 0);
@@ -257,6 +261,7 @@ public class StoryService {
             Stage stage = new Stage();
             stage.setGame(game);
             stage.setUserChoice(userChoice);
+            stage.setStageNumber(6);
             stage.setStory(story);
             stage.setProbability(probability);
             stage.setEndTime(LocalDateTime.now());
@@ -291,4 +296,40 @@ public class StoryService {
         return gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
     }
+
+    // 히스토리 조회
+    public Map<String, Object> getGameStagesForUser(Long userId) {
+        try {
+            // userId로 유저 조회
+            logger.info("[Service] Fetching user with userId: {}", userId);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + userId));
+
+            // 유저의 게임 조회
+            List<Game> userGames = gameRepository.findByUser_Id(user.getId());
+            if (userGames.isEmpty()) {
+                throw new EntityNotFoundException("No games found for the given userId: " + userId);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            for (Game game : userGames) {
+                List<Stage> stages = stageRepository.findByGame_GameId(game.getGameId());
+                for (Stage stage : stages) {
+                    if (stage.getStageNumber() == 6) {
+                        result.put("story", stage.getStory());
+                    } else if (stage.getStageNumber() == 5) {
+                        result.put("imageUrl", stage.getImageUrl());
+                    }
+                }
+            }
+
+            // 반환 데이터 로그
+            logger.info("[Service] Returning data: {}", result);
+            return result;
+        } catch (Exception e) {
+            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", userId, e.getMessage());
+            throw new RuntimeException("Error fetching game stages: " + e.getMessage());
+        }
+    }
+
 }

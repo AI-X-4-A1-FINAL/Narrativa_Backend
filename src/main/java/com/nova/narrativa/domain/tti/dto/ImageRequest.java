@@ -1,49 +1,27 @@
 package com.nova.narrativa.domain.tti.dto;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
+@Data
+@Getter
+@Setter
 public class ImageRequest {
 
-    private String prompt;
-    private String size;
-    private int n;
-    private String genre;  // genre 추가
-
-    // Getters and Setters
-    public String getPrompt() {
-        return prompt;
-    }
-
-    public void setPrompt(String prompt) {
-        this.prompt = prompt;
-    }
-
-    public String getSize() {
-        return size;
-    }
-
-    public void setSize(String size) {
-        this.size = size;
-    }
-
-    public int getN() {
-        return n;
-    }
-
-    public void setN(int n) {
-        this.n = n;
-    }
-
-    public String getGenre() {
-        return genre;
-    }
-
-    public void setGenre(String genre) {
-        this.genre = genre;
-    }
+    private Long gameId;         // 게임 ID
+    private int stageNumber;     // 스테이지 번호
+    private String prompt;       // 프롬프트
+    private String size;         // 이미지 크기
+    private int n;               // 생성할 이미지 개수
+    private String genre;        // 게임 장르
 
     @Override
     public String toString() {
         return "ImageRequest{" +
-                "prompt='" + prompt + '\'' +
+                "gameId=" + gameId +
+                ", stageNumber=" + stageNumber +
+                ", prompt='" + prompt + '\'' +
                 ", size='" + size + '\'' +
                 ", n=" + n +
                 ", genre='" + genre + '\'' +

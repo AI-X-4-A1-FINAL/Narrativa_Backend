@@ -30,13 +30,16 @@ public class ImageController {
     // Endpoint to get a generated image from FastAPI
     @PostMapping("/generate-image")
     public ResponseEntity<byte[]> generateImage(@RequestBody ImageRequest request) {
-        // 받은 요청을 확인
-        System.out.println("Received Request: " + request);  // 디버깅용 출력 (보안에 주의해야 함)
-
         try {
             // 이미지 생성 요청을 서비스로 전달하고, 생성된 이미지 URL을 반환
-            ResponseEntity<String> imageUrl = imageService.generateImage(request.getPrompt(), request.getSize(), request.getN(), request.getGenre());
-
+            ResponseEntity<String> imageUrl = imageService.generateImage(
+                    request.getGameId(),
+                    request.getStageNumber(),
+                    request.getPrompt(),
+                    request.getSize(),
+                    request.getN(),
+                    request.getGenre()
+            );
             // 생성된 이미지 URL을 응답으로 반환
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)  // JSON 형태로 반환

@@ -65,7 +65,7 @@ public class StoryController {
     public ResponseEntity<String> generateEnding(@RequestBody Map<String, Object> request) {
         try {
             // 로그 출력해서 데이터 확인
-            System.out.println("[Controller] Received request: " + request);
+//            System.out.println("[Controller] Received request: " + request);
 
             // Map에서 데이터 추출
             String gameId = String.valueOf(request.get("gameId"));
@@ -75,13 +75,33 @@ public class StoryController {
             // StoryService 호출
             String storyResponse = storyService.generateEnding(gameId, genre, userChoice);
 
-            System.out.println("[Controller] Response from service: " + storyResponse); // 응답 로그 추가
+//            System.out.println("[Controller] Response from service: " + storyResponse); // 응답 로그 추가
 
             return ResponseEntity.ok(storyResponse);
         } catch (Exception e) {
             System.err.println("[Controller] Error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/user-games/{userId}")
+    public ResponseEntity<Map<String, Object>> getUserGameStages(@PathVariable("userId") Long userId) {
+        try {
+            // 로그 출력
+            System.out.println("[Controller] Received request with userId: " + userId);
+
+            // 서비스 호출
+            Map<String, Object> result = storyService.getGameStagesForUser(userId);
+
+            // 반환 데이터 로그
+            System.out.println("[Controller] Returning response: " + result);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("[Controller] Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error: " + e.getMessage()));
         }
     }
 

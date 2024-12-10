@@ -32,7 +32,10 @@ public class JWTCheckFilter extends OncePerRequestFilter {
         // 해당 경로 filter 적용x
         if (path.startsWith("/api/users/sign-up") ||    // 회원가입 제외
             path.startsWith("/login") ||                // 소셜 로그인 제외
-            path.startsWith("/api/notices")             // 알람 제외 
+            path.startsWith("/api/notices") ||          // 알람 제외 
+            path.startsWith("/actuator/health") ||      // health check 제외
+            path.startsWith("/api/admin")       ||      // 관리자 관련 모든 경로 제외
+            path.startsWith("/api/music")               // 관리자 S3 관리 경로 제외
         ) {
             log.info("해당 url은 filter가 적용x");
             return true;
