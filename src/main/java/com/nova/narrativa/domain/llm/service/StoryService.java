@@ -307,7 +307,7 @@ public class StoryService {
 
             List<Game> userGames = gameRepository.findByUser_Id(user.getId());
             if (userGames.isEmpty()) {
-                logger.warn("[Service] No games found for userId: {}", id);
+//                logger.warn("[Service] No games found for userId: {}", id);
                 throw new EntityNotFoundException("No games found for the given userId: " + id);
             }
 
