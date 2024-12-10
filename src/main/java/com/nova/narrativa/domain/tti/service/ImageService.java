@@ -105,24 +105,20 @@ public class ImageService {
 
     public ResponseEntity<String> generateImage(Long gameId, int stageNumber, String prompt, String size, int n, String genre) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
-        // gameId를 String으로 변환
         String gameIdStr = String.valueOf(gameId);
 
         Map<String, Object> requestPayload = Map.of(
-                "gameId", gameIdStr,  // gameId 추가
-                "stageNumber", stageNumber,  // stageNumber 추가
+                "gameId", gameIdStr,
+                "stageNumber", stageNumber,
                 "prompt", prompt,
                 "size", size,
                 "n", n,
                 "genre", genre
         );
-//        System.out.println("Request Payload: " + requestPayload); // 이 부분에서 요청 본문 확인
 
-        // HTTP 헤더에 API 키 추가
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-API-Key", apiKey);
-
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestPayload, headers);
 
@@ -141,29 +137,29 @@ public class ImageService {
 
             String jsonString = new String(responseData, StandardCharsets.UTF_8);
             JsonNode jsonNode = objectMapper.readTree(jsonString);
-            String imageUrl = jsonNode.get("imageUrl").asText();
-//            logger.info("Generated Image URL: {}", imageUrl); // 로그 출력
+            String imageUrl = jsonNode.get("imageUrl").asText(); // 프론트에 반환할 값
+
+            // S3에 업로드하여 JSON 데이터를 저장하고, S3 URL을 반환
+            String s3ImageUrl = uploadJsonToS3(imageUrl, gameId, stageNumber);
 
             // 해당 gameId와 stageNumber를 기준으로 Stage 엔터티 조회
             Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
                     .orElseGet(() -> {
-                        // Stage가 없으면 새로 생성
                         Stage newStage = new Stage();
                         newStage.setGame(gameRepository.findById(gameId).orElseThrow(() -> new EntityNotFoundException("Game not found")));
                         newStage.setStageNumber(stageNumber);
-                        newStage.setImageUrl(imageUrl); // 새로 생성된 Stage에 imageUrl 추가
+                        newStage.setImageUrl(s3ImageUrl); // S3 URL로 저장
                         return stageRepository.save(newStage);  // 새 Stage 저장
                     });
 
             // imageUrl이 이미 저장되어 있지 않다면 업데이트
             if (stage.getImageUrl() == null || stage.getImageUrl().isEmpty()) {
-                stage.setImageUrl(imageUrl);
+                stage.setImageUrl(s3ImageUrl);
                 stageRepository.save(stage);  // Stage 엔티티 업데이트
             }
 
-            String s3Key = uploadJsonToS3(jsonString);
-            // Stage 엔티티에 imageUrl 업데이트
-            return ResponseEntity.ok(imageUrl);
+            // 프론트에는 원래의 이미지 URL을 반환
+            return ResponseEntity.ok(imageUrl);  // 원래의 imageUrl을 프론트로 반환
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -171,10 +167,19 @@ public class ImageService {
         }
     }
 
-    private String uploadJsonToS3(String jsonString) {
+    private String uploadJsonToS3(String imageUrl, Long gameId, int stageNumber) {
         try {
+            // 이미지 URL을 포함한 JSON 객체 생성
+            Map<String, Object> jsonData = new HashMap<>();
+            jsonData.put("imageUrl", imageUrl);
+            jsonData.put("gameId", gameId);
+            jsonData.put("stageNumber", stageNumber);
+
+            // JSON 문자열로 변환
+            String jsonString = objectMapper.writeValueAsString(jsonData);
+
             // S3 파일 이름 생성
-            String fileName = "json-data/" + UUID.randomUUID() + ".json";
+            String fileName = "image-urls/" + UUID.randomUUID() + ".json";
 
             // S3에 업로드 요청 생성
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -186,11 +191,14 @@ public class ImageService {
             // S3 클라이언트를 통해 JSON 문자열 업로드
             S3Client s3Client = S3Client.create();
             s3Client.putObject(putObjectRequest, RequestBody.fromString(jsonString));
+            //            System.out.println("Uploaded JSON to S3 with key: " + fileName);
+            // 업로드된 파일의 S3 URL 반환
+            String s3Url = bucketName + "/" + fileName;
+            return s3Url;
 
-//            System.out.println("Uploaded JSON to S3 with key: " + fileName);
-            return fileName;
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload JSON to S3", e);
         }
     }
+
 }
