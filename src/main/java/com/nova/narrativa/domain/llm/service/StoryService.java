@@ -5,6 +5,7 @@ import com.nova.narrativa.domain.llm.entity.Game;
 import com.nova.narrativa.domain.llm.entity.Stage;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
+import com.nova.narrativa.domain.tti.service.ImageService;
 import com.nova.narrativa.domain.user.entity.User;
 import com.nova.narrativa.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -29,6 +32,9 @@ public class StoryService {
     private final StageRepository stageRepository;
     private final ObjectMapper objectMapper;
     private static final Logger logger = LoggerFactory.getLogger(StoryService.class);
+    private final ImageService imageService;
+
+    private final String s3BucketName = "images-storage-buckets";
 
     @Value("${environments.narrativa-ml.url}")
     private String mlServerUrl;
@@ -39,14 +45,14 @@ public class StoryService {
     @Autowired
     public StoryService(RestTemplate restTemplate, GameRepository gameRepository,
                         UserRepository userRepository, StageRepository stageRepository,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper, ImageService imageService) {
         this.restTemplate = restTemplate;
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.stageRepository = stageRepository;
         this.objectMapper = objectMapper;
+        this.imageService = imageService;
     }
-
     @Transactional
     public Map<String, Object> startGame(String genre, List<String> tags, Long userId) {
         Map<String, Object> request = new HashMap<>();
@@ -295,31 +301,22 @@ public class StoryService {
     }
 
     // 히스토리 조회
-    public List<Map<String, Object>> getGameStagesForUser(Long Id) {
+    public List<Map<String, Object>> getGameStagesForUser(Long id) {
         try {
-            logger.info("[Service] Fetching user with userId: {}", Id);
+            // 유저 조회 및 게임 리스트 가져오기
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + id));
 
-            // userId로 유저 조회
-            User user = userRepository.findById(Id)
-                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + Id));
-
-            logger.info("[Service] Found user: {}", user.getUsername());
-
-            // 유저의 모든 게임 조회
             List<Game> userGames = gameRepository.findByUser_Id(user.getId());
             if (userGames.isEmpty()) {
-                logger.warn("[서비스] 유저Id를 찾을 수 없음.: {}", Id);
-                throw new EntityNotFoundException("No games found for the given userId: " + Id);
+                logger.warn("[Service] No games found for userId: {}", id);
+                throw new EntityNotFoundException("No games found for the given userId: " + id);
             }
-
-            logger.info("[Service] Found {} games for userId: {}", userGames.size(), Id);
 
             List<Map<String, Object>> resultList = new ArrayList<>();
 
-            // 각 게임의 스테이지 필터링 및 결과 생성
+            // 각 게임의 스테이지 처리
             for (Game game : userGames) {
-                logger.info("[Service] Processing gameId: {}", game.getGameId());
-
                 List<Stage> stages = stageRepository.findByGame_GameId(game.getGameId());
 
                 // stageNumber가 6까지 저장된 게임인지 확인
@@ -328,26 +325,36 @@ public class StoryService {
                 if (hasStage6) {
                     Map<String, Object> result = new HashMap<>();
                     result.put("gameId", game.getGameId());
+                    result.put("genre", game.getGenre());
 
                     for (Stage stage : stages) {
                         if (stage.getStageNumber() == 6) {
                             result.put("story", stage.getStory());
                         } else if (stage.getStageNumber() == 5) {
-                            result.put("imageUrl", stage.getImageUrl());
+                            String fullFilePath = stage.getImageUrl(); // full path including bucket name
+                            try {
+                                // S3 경로에서 파일을 가져오기
+                                String imageUrl = imageService.getImageUrlFromS3(fullFilePath);
+                                result.put("imageUrl", imageUrl);
+                            } catch (FileNotFoundException e) {
+                                logger.warn("[Service] File not found in S3 at path: {}", fullFilePath);
+                                result.put("imageUrl", "/default-thumbnail.jpg");
+                            } catch (IOException | IllegalArgumentException e) {
+                                logger.error("[Service] Error reading S3 file at path: {}. Error: {}", fullFilePath, e.getMessage());
+                                result.put("imageUrl", "/default-thumbnail.jpg");
+                            }
                         }
                     }
 
-                    logger.info("[Service] Result for gameId {}: {}", game.getGameId(), result);
                     resultList.add(result);
                 } else {
                     logger.info("[Service] GameId {} does not have stageNumber 6", game.getGameId());
                 }
             }
 
-            logger.info("[Service] Returning resultList with size: {}", resultList.size());
             return resultList;
         } catch (Exception e) {
-            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", Id, e.getMessage());
+            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", id, e.getMessage());
             throw new RuntimeException("Error fetching game stages: " + e.getMessage());
         }
     }

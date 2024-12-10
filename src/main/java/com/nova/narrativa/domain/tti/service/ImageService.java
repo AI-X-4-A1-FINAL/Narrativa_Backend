@@ -1,22 +1,20 @@
 package com.nova.narrativa.domain.tti.service;
 
-
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
-import com.nova.narrativa.domain.llm.entity.Game;
 import com.nova.narrativa.domain.llm.entity.Stage;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -24,11 +22,13 @@ import org.springframework.web.client.RestTemplate;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -50,6 +50,7 @@ public class ImageService {
     private final StageRepository stageRepository;
     private final GameRepository gameRepository;
     private static final Logger logger = LoggerFactory.getLogger(ImageService.class);
+    private final AmazonS3 amazonS3;
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
@@ -191,7 +192,7 @@ public class ImageService {
             // S3 클라이언트를 통해 JSON 문자열 업로드
             S3Client s3Client = S3Client.create();
             s3Client.putObject(putObjectRequest, RequestBody.fromString(jsonString));
-            //            System.out.println("Uploaded JSON to S3 with key: " + fileName);
+            // System.out.println("Uploaded JSON to S3 with key: " + fileName);
             // 업로드된 파일의 S3 URL 반환
             String s3Url = bucketName + "/" + fileName;
             return s3Url;
@@ -200,5 +201,46 @@ public class ImageService {
             throw new RuntimeException("Failed to upload JSON to S3", e);
         }
     }
+
+    // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
+    public String getImageUrlFromS3(String fullFilePath) throws IOException {
+        String bucketName = "images-storage-buckets"; // S3 버킷 이름
+        String filePath = fullFilePath.substring(bucketName.length() + 1); // 버킷 이름을 제외한 경로 부분만 분리
+
+        logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
+
+        // S3 객체가 존재하는지 확인
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                .bucket(bucketName)
+                .key(filePath)  // 경로에서 버킷 이름을 제외한 부분만 사용
+                .build();
+
+        try {
+            // 객체가 존재하면 헤드 요청이 성공
+            s3Client.headObject(headObjectRequest);
+        } catch (NoSuchKeyException e) {
+            // 파일이 존재하지 않으면 예외 처리
+            throw new FileNotFoundException("File does not exist in S3 at path: " + filePath);
+        }
+
+        // 파일이 존재하면 S3에서 가져오기
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(filePath)  // 경로에서 버킷 이름을 제외한 부분만 사용
+                .build();
+
+        try (InputStream inputStream = s3Client.getObject(getObjectRequest)) {
+            // JSON 파싱
+            Map<String, Object> jsonData = objectMapper.readValue(inputStream, Map.class);
+            if (jsonData.containsKey("imageUrl")) {
+                String imageUrl = (String) jsonData.get("imageUrl");
+                logger.info("[Service] Found imageUrl in S3 JSON: {}", imageUrl);
+                return imageUrl;
+            } else {
+                throw new IllegalArgumentException("The JSON file does not contain 'imageUrl' key");
+            }
+        }
+    }
+
 
 }
