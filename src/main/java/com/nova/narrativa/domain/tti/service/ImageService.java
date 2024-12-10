@@ -1,24 +1,20 @@
 package com.nova.narrativa.domain.tti.service;
 
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
-import com.nova.narrativa.domain.llm.entity.Game;
 import com.nova.narrativa.domain.llm.entity.Stage;
 import com.nova.narrativa.domain.llm.repository.GameRepository;
 import com.nova.narrativa.domain.llm.repository.StageRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -209,19 +205,22 @@ public class ImageService {
 
     // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
     public String getImageUrlFromS3(String bucketName, String filePath) throws IOException {
-//        logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
-        // 파일 존재 여부 확인 (옵션)
+        logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
+
+        // 파일 존재 여부 확인
         if (!amazonS3.doesObjectExist(bucketName, filePath)) {
             throw new FileNotFoundException("File does not exist in S3 at path: " + filePath);
         }
-        // 파일 가져오기
+
+        // S3에서 파일 가져오기
         S3Object s3Object = amazonS3.getObject(bucketName, filePath);
+
         try (InputStream inputStream = s3Object.getObjectContent()) {
             // JSON 파싱
             Map<String, Object> jsonData = objectMapper.readValue(inputStream, Map.class);
             if (jsonData.containsKey("imageUrl")) {
                 String imageUrl = (String) jsonData.get("imageUrl");
-//                logger.info("[Service] Found imageUrl in S3 JSON: {}", imageUrl);
+                logger.info("[Service] Found imageUrl in S3 JSON: {}", imageUrl);
                 return imageUrl;
             } else {
                 throw new IllegalArgumentException("The JSON file does not contain 'imageUrl' key");
