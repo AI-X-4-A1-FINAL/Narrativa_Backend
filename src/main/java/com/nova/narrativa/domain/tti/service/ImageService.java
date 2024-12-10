@@ -1,6 +1,8 @@
 package com.nova.narrativa.domain.tti.service;
 
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.common.exception.NoImageFileFoundException;
@@ -29,6 +31,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -50,6 +55,7 @@ public class ImageService {
     private final StageRepository stageRepository;
     private final GameRepository gameRepository;
     private static final Logger logger = LoggerFactory.getLogger(ImageService.class);
+    private final AmazonS3 amazonS3;
 
     @Value("${environments.narrativa-ml.url}")
     private String fastApiUrl;  // FastAPI 서버의 URL
@@ -191,7 +197,7 @@ public class ImageService {
             // S3 클라이언트를 통해 JSON 문자열 업로드
             S3Client s3Client = S3Client.create();
             s3Client.putObject(putObjectRequest, RequestBody.fromString(jsonString));
-            //            System.out.println("Uploaded JSON to S3 with key: " + fileName);
+            // System.out.println("Uploaded JSON to S3 with key: " + fileName);
             // 업로드된 파일의 S3 URL 반환
             String s3Url = bucketName + "/" + fileName;
             return s3Url;
@@ -200,5 +206,28 @@ public class ImageService {
             throw new RuntimeException("Failed to upload JSON to S3", e);
         }
     }
+
+    // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
+    public String getImageUrlFromS3(String bucketName, String filePath) throws IOException {
+//        logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
+        // 파일 존재 여부 확인 (옵션)
+        if (!amazonS3.doesObjectExist(bucketName, filePath)) {
+            throw new FileNotFoundException("File does not exist in S3 at path: " + filePath);
+        }
+        // 파일 가져오기
+        S3Object s3Object = amazonS3.getObject(bucketName, filePath);
+        try (InputStream inputStream = s3Object.getObjectContent()) {
+            // JSON 파싱
+            Map<String, Object> jsonData = objectMapper.readValue(inputStream, Map.class);
+            if (jsonData.containsKey("imageUrl")) {
+                String imageUrl = (String) jsonData.get("imageUrl");
+//                logger.info("[Service] Found imageUrl in S3 JSON: {}", imageUrl);
+                return imageUrl;
+            } else {
+                throw new IllegalArgumentException("The JSON file does not contain 'imageUrl' key");
+            }
+        }
+    }
+
 
 }
