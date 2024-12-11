@@ -61,7 +61,7 @@ public class CustomSecurityConfig {
 
         // 세션 생성 x
         http.sessionManagement(httpSecuritySessionManagementConfigurer -> {
-           httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.NEVER);
+            httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.NEVER);
         });
 
         http.formLogin(AbstractHttpConfigurer::disable);    // 기본 로그인 페이지 비활성화
@@ -75,7 +75,7 @@ public class CustomSecurityConfig {
         http.addFilterBefore(new JWTCheckFilter(), UsernamePasswordAuthenticationFilter.class);
 
         http.exceptionHandling(config -> {
-           config.accessDeniedHandler(new CustomAccessDeniedHandler());
+            config.accessDeniedHandler(new CustomAccessDeniedHandler());
         });
 
         return http.build();

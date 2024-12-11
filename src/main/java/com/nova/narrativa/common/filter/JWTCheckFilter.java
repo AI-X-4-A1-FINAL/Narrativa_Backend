@@ -19,18 +19,15 @@ public class JWTCheckFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
 
         String path = request.getRequestURI();
-
-        // Swagger 및 특정 경로 필터 제외
-        if (
+        if (path.startsWith("/api/users/sign-up") ||    // 회원가입 제외
+            path.startsWith("/login") ||                // 소셜 로그인 제외
+            path.startsWith("/api/notices") ||          // 알람 제외
+            path.startsWith("/actuator/health") ||      // health check 제외
+            path.startsWith("/api/admin")       ||      // 관리자 관련 모든 경로 제외
+            path.startsWith("/api/music")      // ||        // 관리자 S3 관리 경로 제외
 //            path.startsWith("/v3/api-docs") ||           // Swagger 명세 제외
-//            path.startsWith("/swagger-ui") ||            // Swagger UI 제외
-            path.startsWith("/api/member/login") ||      // 로그인 경로 제외
-            path.startsWith("/api/users/sign-up") ||     // 회원가입 제외
-            path.startsWith("/login") ||                 // 소셜 로그인 제외
-            path.startsWith("/api/notices") ||           // 알림 제외
-            path.startsWith("/actuator/health") ||       // Health Check 제외
-            path.startsWith("/api/admin") ||             // 관리자 경로 제외
-            path.startsWith("/api/music"))
+//            path.startsWith("/swagger-ui")      // Swagger UI 제외
+        )
         {
             log.info("{} 경로는 filter 적용x", path);     // true == Filter 적용 제외
             return true;
