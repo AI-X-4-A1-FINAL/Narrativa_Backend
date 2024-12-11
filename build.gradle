@@ -25,20 +25,25 @@ repositories {
 
 dependencies {
 
-
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
-    // Firebase Admin SDK
-    implementation 'com.google.firebase:firebase-admin:9.1.1'
+    // firebase
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+    // Analytics 관련 의존성 추가
+    implementation 'com.google.cloud:google-cloud-storage:2.32.1'
 
     // DB
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
+    // 스토리 비동기 방식
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Dev Tools
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -68,6 +73,9 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // Analytics
+    implementation 'com.google.analytics:google-analytics-data:0.24.0'
 }
 
 tasks.named('test') {
