@@ -106,7 +106,7 @@ public class ImageService {
         return generatePresignedUrl(randomImageFile);
     }
 
-    public ResponseEntity<String> generateImage(Long gameId, int stageNumber, String prompt, String size, int n, String genre) {
+    public ResponseEntity<byte[]> generateImage(Long gameId, int stageNumber, String prompt, String size, int n, String genre) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
         String gameIdStr = String.valueOf(gameId);
 
@@ -137,42 +137,20 @@ public class ImageService {
             if (responseData == null || responseData.length == 0) {
                 throw new RuntimeException("Received empty response from FastAPI");
             }
-
-            String jsonString = new String(responseData, StandardCharsets.UTF_8);
-            JsonNode jsonNode = objectMapper.readTree(jsonString);
-            String imageUrl = jsonNode.get("imageUrl").asText(); // 프론트에 반환할 값
-            System.out.println(imageUrl);
-
-            //byte[] 변환
-            byte[] imageBytes = restTemplate.getForObject(imageUrl, byte[].class);
-            if (imageBytes == null || imageBytes.length == 0) {
-                throw new RuntimeException("Failed to download image from URL");
-            }
+            System.out.println(Arrays.toString(responseData));
 
             // S3에 업로드하여 URL 생성
-            String s3ImageUrl = uploadImageToS3(imageBytes, gameId, stageNumber);
-
-            // Stage 엔터티 업데이트
-            Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
-                    .orElseGet(() -> {
-                        Stage newStage = new Stage();
-                        newStage.setGame(gameRepository.findById(gameId).orElseThrow(() -> new EntityNotFoundException("Game not found")));
-                        newStage.setStageNumber(stageNumber);
-                        newStage.setImageUrl(s3ImageUrl); // S3 URL로 저장
-                        return stageRepository.save(newStage);  // 새 Stage 저장
-                    });
-
-            if (stage.getImageUrl() == null || stage.getImageUrl().isEmpty()) {
-                stage.setImageUrl(s3ImageUrl);
-                stageRepository.save(stage);  // Stage 엔티티 업데이트
-            }
+            String s3ImageUrl = uploadImageToS3(responseData, gameId, stageNumber);
 
             // 프론트에는 원래의 이미지 URL을 반환
-            return ResponseEntity.ok(imageUrl);  // 원래의 imageUrl을 프론트로 반환
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(responseData);  // 원래의 imageUrl을 프론트로 반환
 
-        } catch (Exception e) {
+        }  catch (Exception e) {
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to process request: " + e.getMessage());
+                    .body(("Failed to process request: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -199,6 +177,8 @@ public class ImageService {
 
             // 업로드된 파일의 S3 URL 반환
             String s3Url = "https://" + bucketName + ".s3.amazonaws.com/" + fileName;
+            //System.out.println(s3Url);
+
             return s3Url;
 
         } catch (Exception e) {
@@ -247,5 +227,5 @@ public class ImageService {
         }
     }
 
-
 }
+
