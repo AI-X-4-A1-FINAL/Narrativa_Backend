@@ -54,22 +54,22 @@ public class AdviceService {
                 });
     }
 
-        public Mono<NPCChatResponse> chatWithNpc(Long gameId) {
-            return webClient.post()
-                    .uri(mlServerUrl + "/api/story/chat")
-                    .header("X-API-Key", apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(Map.of("game_id", gameId.toString()))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .map(responseBody -> {
-                        try {
-                            NPCChatResponse chatResponse = objectMapper.readValue(responseBody, NPCChatResponse.class);
-                            chatResponse.setGameId(gameId.toString());
-                            return chatResponse;
-                        } catch (Exception e) {
-                            throw new RuntimeException("Error parsing NPC chat response: " + e.getMessage());
-                        }
-                    });
-        }
+    public Mono<NPCChatResponse> chatWithNpc(Long gameId) {
+        return webClient.post()
+                .uri(mlServerUrl + "/api/story/chat")
+                .header("X-API-Key", apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("game_id", gameId.toString()))
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(responseBody -> {
+                    try {
+                        NPCChatResponse chatResponse = objectMapper.readValue(responseBody, NPCChatResponse.class);
+                        chatResponse.setGameId(gameId.toString());
+                        return chatResponse;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error parsing NPC chat response: " + e.getMessage());
+                    }
+                });
     }
+}

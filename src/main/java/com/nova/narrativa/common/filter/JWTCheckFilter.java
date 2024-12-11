@@ -14,30 +14,29 @@ import java.util.Map;
 @Slf4j
 public class JWTCheckFilter extends OncePerRequestFilter {
 
-    // 특정 경로 필터 제외
+    // login 같이 filter 적용x
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
 
         String path = request.getRequestURI();
+
+        // 해당 경로 filter 적용x
         if (path.startsWith("/api/users/sign-up") ||    // 회원가입 제외
-            path.startsWith("/login") ||                // 소셜 로그인 제외
-            path.startsWith("/api/notices") ||          // 알람 제외
-            path.startsWith("/actuator/health") ||      // health check 제외
-            path.startsWith("/api/admin")       ||      // 관리자 관련 모든 경로 제외
-            path.startsWith("/api/music")      // ||        // 관리자 S3 관리 경로 제외
-//            path.startsWith("/v3/api-docs") ||           // Swagger 명세 제외
-//            path.startsWith("/swagger-ui")      // Swagger UI 제외
-        )
-        {
-            log.info("{} 경로는 filter 적용x", path);     // true == Filter 적용 제외
+                path.startsWith("/login") ||                // 소셜 로그인 제외
+                path.startsWith("/api/notices") ||          // 알람 제외
+                path.startsWith("/actuator/health") ||      // health check 제외
+                path.startsWith("/api/admin")       ||      // 관리자 관련 모든 경로 제외
+                path.startsWith("/api/music")               // 관리자 S3 관리 경로 제외
+        ) {
+            log.info(String.format("{} 경로는 filter 적용x", path));     // true == Filter check x
             return true;
         }
 
-        log.info("{} 경로는 filter 적용o", path);         // false == Filter 적용
+        log.info(String.format("{} 경로는 filter 적용o", path));         // false == Filter check o
         return false;
     }
 
-    // 필터 적용
+    // filter 적용
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -49,7 +48,7 @@ public class JWTCheckFilter extends OncePerRequestFilter {
         log.info("tokenHeader: {}", tokenHeader);
 
         try {
-            String accessToken = tokenHeader.substring(7); // "Bearer "를 제거한 토큰 가져옴
+            String accessToken = tokenHeader.substring(7); // "Bearer "를 제거한 토큰만 가져옴
             Map<String, Object> claims = JWTUtil.validateToken(accessToken);
 
             log.info("JWT claims: {}", claims);
@@ -62,9 +61,9 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             response.setContentType("application/json; charset=utf-8");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-            if ("MalformedJwtException".equals(e.getMessage())) {
+            if (e.getMessage().equals("MalformedJwtException")) {
                 response.getWriter().write("{\"message\": \"JWT 토큰의 형식이 올바르지 않습니다. 토큰 값을 확인해 주세요.\"}");
-            } else if ("ExpiredJwtException".equals(e.getMessage())) {
+            } else if (e.getMessage().equals("ExpiredJwtException")) {
                 response.getWriter().write("{\"message\": \"JWT 토큰이 만료되었습니다. 다시 로그인 해주세요.\"}");
             }
 
