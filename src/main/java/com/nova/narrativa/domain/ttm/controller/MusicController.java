@@ -129,5 +129,3 @@ public class MusicController {
         throw new IllegalArgumentException("Authorization 헤더가 유효하지 않습니다.");
     }
 }
-
-

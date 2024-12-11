@@ -10,4 +10,8 @@ public class TokenResponse {
     private String email;
     private String role;
     private String username;
+
+    public TokenResponse(String uid, String email, String role) {
+        this(uid, email, role, null);
+    }
 }
