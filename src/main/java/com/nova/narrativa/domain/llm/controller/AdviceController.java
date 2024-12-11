@@ -1,3 +1,4 @@
+
 package com.nova.narrativa.domain.llm.controller;
 
 import com.nova.narrativa.domain.llm.dto.AdviceRequest;
