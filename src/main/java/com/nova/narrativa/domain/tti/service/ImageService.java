@@ -139,7 +139,6 @@ public class ImageService {
             }
             System.out.println(Arrays.toString(responseData));
 
-
             // S3에 업로드하여 URL 생성
             String s3ImageUrl = uploadImageToS3(responseData, gameId, stageNumber);
 
@@ -149,6 +148,7 @@ public class ImageService {
                     .body(responseData);  // 원래의 imageUrl을 프론트로 반환
 
         }  catch (Exception e) {
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Failed to process request: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         }
@@ -177,7 +177,8 @@ public class ImageService {
 
             // 업로드된 파일의 S3 URL 반환
             String s3Url = "https://" + bucketName + ".s3.amazonaws.com/" + fileName;
-            System.out.println(s3Url);
+            //System.out.println(s3Url);
+
             return s3Url;
 
         } catch (Exception e) {
@@ -226,5 +227,5 @@ public class ImageService {
         }
     }
 
-
 }
+

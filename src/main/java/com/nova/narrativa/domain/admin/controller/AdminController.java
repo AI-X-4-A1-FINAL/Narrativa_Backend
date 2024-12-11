@@ -17,17 +17,17 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "${environments.narrativa-admin.url}",
+        allowCredentials = "true",
+        allowedHeaders = "*",
+        exposedHeaders = "*")
 public class AdminController {
 
     private final AdminService adminService;
     private final AuthService authService;
 
-    @Value("${environments.narrativa-admin.url}")
-    private String narrativaAdminUrl;
-
     // 1. 모든 관리자 조회
     @GetMapping("/users")
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<List<AdminResponse>> getAllAdmins() {
         List<AdminResponse> admins = adminService.getAllAdmins();
         return ResponseEntity.ok(admins);
@@ -35,7 +35,6 @@ public class AdminController {
 
     // 2. 관리자 상태 수정
     @PatchMapping("/users/{userId}/status")
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<AdminResponse> updateAdminStatus(
             @PathVariable Long userId,
             @RequestBody UpdateStatusRequest request) {
@@ -45,7 +44,6 @@ public class AdminController {
 
     // 3. 관리자 권한 수정
     @PatchMapping("/users/{userId}/role")
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<?> updateAdminRole(
             @PathVariable Long userId,
             @RequestBody UpdateRoleRequest request,
@@ -79,7 +77,6 @@ public class AdminController {
 
     // 4. Firebase 토큰 검증 및 사용자 확인
     @PostMapping("/auth/verify")
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<?> verifyToken(@RequestBody TokenRequest request) {
         try {
             FirebaseToken decodedToken = authService.verifyToken(request.getIdToken());
