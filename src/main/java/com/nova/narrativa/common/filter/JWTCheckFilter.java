@@ -26,7 +26,8 @@ public class JWTCheckFilter extends OncePerRequestFilter {
                 path.startsWith("/api/notices") ||          // 알람 제외
                 path.startsWith("/actuator/health") ||      // health check 제외
                 path.startsWith("/api/admin")       ||      // 관리자 관련 모든 경로 제외
-                path.startsWith("/api/music")               // 관리자 S3 관리 경로 제외
+                path.startsWith("/api/music")       ||      // 관리자 S3 관리 경로 제외
+                path.startsWith("/api/health")              // 관리자 배포상태 체크 제외
         ) {
             log.info(String.format("{} 경로는 filter 적용x", path));     // true == Filter check x
             return true;

@@ -17,19 +17,19 @@ public class FirebaseConfig {
     @Value("${spring.firebase.type}")
     private String type;
 
-    @Value("${spring.firebase.project-id}")
+    @Value("${spring.firebase.client_id}")
     private String projectId;
 
-    @Value("${spring.firebase.private-key-id}")
+    @Value("${spring.firebase.private_key_id}")
     private String privateKeyId;
 
-    @Value("${spring.firebase.private-key}")
+    @Value("${spring.firebase.private_key}")
     private String privateKey;
 
-    @Value("${spring.firebase.client-email}")
+    @Value("${spring.firebase.client_email}")
     private String clientEmail;
 
-    @Value("${spring.firebase.client-id}")
+    @Value("${spring.firebase.client_id}")
     private String clientId;
 
     @Bean
