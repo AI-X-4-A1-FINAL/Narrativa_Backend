@@ -1,9 +1,5 @@
 package com.nova.narrativa.common.config;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,23 +23,11 @@ public class S3Config {
     @Value("${aws.s3.region}")
     private String region;
 
-    // AWS SDK v2 credentials provider
     @Bean
     public AwsCredentialsProvider awsCredentialsProvider() {
         return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
     }
 
-    @Bean
-    public AmazonS3 amazonS3() {
-        return AmazonS3ClientBuilder.standard()
-                .withRegion(region) // AWS SDK v1 region
-                .withCredentials(
-                        new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
-                )
-                .build();
-    }
-
-    // AWS SDK v2 S3 client
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
@@ -52,7 +36,6 @@ public class S3Config {
                 .build();
     }
 
-    // AWS SDK v2 S3 async client
     @Bean
     public S3AsyncClient s3AsyncClient() {
         return S3AsyncClient.builder()
@@ -61,7 +44,6 @@ public class S3Config {
                 .build();
     }
 
-    // AWS SDK v2 S3 presigner
     @Bean
     public S3Presigner s3Presigner() {
         return S3Presigner.builder()

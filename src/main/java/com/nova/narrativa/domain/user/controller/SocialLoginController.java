@@ -35,8 +35,8 @@ public class SocialLoginController {
     private final String frontSignupPart;
     private final String redirectUrl;
     private final String serverDomainUrl;
-    private final int accessTokenTime = 60 * 24;     // 1일
-    private final int refreshTokenTime = 60 * 24;    // 1일
+    private final int accessTokenTime = 10;         // 10분
+    private final int refresgTokenTime = 60 * 24;    // 1일
 
     public SocialLoginController(KakaoService kakaoService,
                                  GoogleService googleService,
@@ -130,7 +130,7 @@ public class SocialLoginController {
             log.info("claims (token 넣기 전): {}", claims);
 
             String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
-            String refreshToken = JWTUtil.generateToken(claims, refreshTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);
@@ -225,7 +225,7 @@ public class SocialLoginController {
             log.info("claims (token 넣기 전): {}", claims);
 
             String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
-            String refreshToken = JWTUtil.generateToken(claims, refreshTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);
@@ -330,7 +330,7 @@ public class SocialLoginController {
             log.info("claims (token 넣기 전): {}", claims);
 
             String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
-            String refreshToken = JWTUtil.generateToken(claims, refreshTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);

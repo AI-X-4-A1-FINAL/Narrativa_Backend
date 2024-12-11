@@ -13,7 +13,7 @@ public class RequestParseUtil {
         // 필터에서 설정한 userClaims 정보를 가져옴
         Map<String, Object> claims = (Map<String, Object>) request.getAttribute("claims");
 
-//        log.info("claims: {}", claims);
+        log.info("claims: {}", claims);
 
         // id 값을 안전하게 Long 타입으로 변환
         Long seq = null;
@@ -31,7 +31,7 @@ public class RequestParseUtil {
             }
         }
 
-//        log.info("id: {}", seq);
+        log.info("id: {}", seq);
         return seq;
     }
 }
