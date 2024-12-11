@@ -23,7 +23,7 @@ public class SwaggerConfig {
                         .contact(new Contact()
                                 .name("Nova")
                                 .email("superNova@nova.com")
-                                .url("https://www.narrativa.com"))
+                                .url("https://www.narrativa.kr"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("http://www.apache.org/licenses/LICENSE-2.0.html"))
