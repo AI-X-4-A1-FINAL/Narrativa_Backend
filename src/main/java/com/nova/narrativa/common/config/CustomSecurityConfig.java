@@ -79,11 +79,11 @@ public class CustomSecurityConfig {
            config.accessDeniedHandler(new CustomAccessDeniedHandler());
         });
 
-        // Swagger 허용
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()  // Swagger 허용
-                .anyRequest().authenticated()  // 나머지 요청은 인증 필요
-        );
+//        // Swagger 허용
+//        http.authorizeHttpRequests(auth -> auth
+//                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()  // Swagger 허용
+//                .anyRequest().authenticated()  // 나머지 요청은 인증 필요
+//        );
 
         return http.build();
     }
