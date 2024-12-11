@@ -17,7 +17,7 @@ public class FirebaseConfig {
     @Value("${spring.firebase.type}")
     private String type;
 
-    @Value("${spring.firebase.client_id}")
+    @Value("${spring.firebase.project_id}")
     private String projectId;
 
     @Value("${spring.firebase.private_key_id}")
