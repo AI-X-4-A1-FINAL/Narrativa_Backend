@@ -62,7 +62,7 @@ public class SignController {
         }
     }
 
-    //    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_VIP')")
+//    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_VIP')")
 //    @PreAuthorize("hasAnyRole('ROLE_ADMIN')")
     @GetMapping("/users")   // 회원 정보 전체 조회
     public ResponseEntity<UserProfileInfo> getUser(@RequestHeader("Authorization") String authorizationHeader,

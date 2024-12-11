@@ -26,11 +26,9 @@ import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -141,18 +139,11 @@ public class ImageService {
             String jsonString = new String(responseData, StandardCharsets.UTF_8);
             JsonNode jsonNode = objectMapper.readTree(jsonString);
             String imageUrl = jsonNode.get("imageUrl").asText(); // 프론트에 반환할 값
-            System.out.println(imageUrl);
 
-            //byte[] 변환
-            byte[] imageBytes = restTemplate.getForObject(imageUrl, byte[].class);
-            if (imageBytes == null || imageBytes.length == 0) {
-                throw new RuntimeException("Failed to download image from URL");
-            }
+            // S3에 업로드하여 JSON 데이터를 저장하고, S3 URL을 반환
+            String s3ImageUrl = uploadJsonToS3(imageUrl, gameId, stageNumber);
 
-            // S3에 업로드하여 URL 생성
-            String s3ImageUrl = uploadImageToS3(imageBytes, gameId, stageNumber);
-
-            // Stage 엔터티 업데이트
+            // 해당 gameId와 stageNumber를 기준으로 Stage 엔터티 조회
             Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
                     .orElseGet(() -> {
                         Stage newStage = new Stage();
@@ -162,6 +153,7 @@ public class ImageService {
                         return stageRepository.save(newStage);  // 새 Stage 저장
                     });
 
+            // imageUrl이 이미 저장되어 있지 않다면 업데이트
             if (stage.getImageUrl() == null || stage.getImageUrl().isEmpty()) {
                 stage.setImageUrl(s3ImageUrl);
                 stageRepository.save(stage);  // Stage 엔티티 업데이트
@@ -176,36 +168,39 @@ public class ImageService {
         }
     }
 
-    public String uploadImageToS3(byte[] imageBytes, Long gameId, int stageNumber) {
+    private String uploadJsonToS3(String imageUrl, Long gameId, int stageNumber) {
         try {
-            // S3 파일 이름 생성 (gameId와 stageNumber를 파일명에 포함)
-            String fileName = "game-images/" + gameId + "-stage" + stageNumber + ".jpg";
+            // 이미지 URL을 포함한 JSON 객체 생성
+            Map<String, Object> jsonData = new HashMap<>();
+            jsonData.put("imageUrl", imageUrl);
+            jsonData.put("gameId", gameId);
+            jsonData.put("stageNumber", stageNumber);
 
-            // InputStream으로 변환
-            InputStream inputStream = new ByteArrayInputStream(imageBytes);
+            // JSON 문자열로 변환
+            String jsonString = objectMapper.writeValueAsString(jsonData);
 
-            // S3 클라이언트 생성
-            S3Client s3Client = S3Client.create();
+            // S3 파일 이름 생성
+            String fileName = "image-urls/" + UUID.randomUUID() + ".json";
 
-            // S3 업로드 요청 생성
+            // S3에 업로드 요청 생성
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(fileName)
-                    .contentType("image/jpeg") // JPEG 형식
+                    .contentType("application/json")
                     .build();
 
-            // S3에 이미지 업로드
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, imageBytes.length));
-
+            // S3 클라이언트를 통해 JSON 문자열 업로드
+            S3Client s3Client = S3Client.create();
+            s3Client.putObject(putObjectRequest, RequestBody.fromString(jsonString));
+            // System.out.println("Uploaded JSON to S3 with key: " + fileName);
             // 업로드된 파일의 S3 URL 반환
-            String s3Url = "https://" + bucketName + ".s3.amazonaws.com/" + fileName;
+            String s3Url = bucketName + "/" + fileName;
             return s3Url;
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to upload image to S3", e);
+            throw new RuntimeException("Failed to upload JSON to S3", e);
         }
     }
-
 
     // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
     public String getImageUrlFromS3(String fullFilePath) throws IOException {

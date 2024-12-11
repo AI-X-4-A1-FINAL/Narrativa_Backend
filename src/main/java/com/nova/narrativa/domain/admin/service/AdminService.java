@@ -69,3 +69,4 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Admin user not found"));
     }
 }
+

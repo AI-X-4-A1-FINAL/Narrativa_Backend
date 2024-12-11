@@ -35,8 +35,8 @@ public class SocialLoginController {
     private final String frontSignupPart;
     private final String redirectUrl;
     private final String serverDomainUrl;
-    private final int accessTokenTime = 60 * 24;     // 1일
-    private final int refreshTokenTime = 60 * 24;    // 1일
+    private final int accessTokenTime = 10;         // 10분
+    private final int refresgTokenTime = 60 * 24;    // 1일
 
     public SocialLoginController(KakaoService kakaoService,
                                  GoogleService googleService,
@@ -66,8 +66,8 @@ public class SocialLoginController {
 
         // JWTTokenDTO 정의, 로그인 타입 세팅
         JWTTokenDTO tokenDTO = JWTTokenDTO.builder()
-                .loginType(kakaoLoginType)
-                .build();
+                                            .loginType(kakaoLoginType)
+                                            .build();
 
         try {
             socialLoginResult = kakaoService.login(code);
@@ -109,11 +109,11 @@ public class SocialLoginController {
 
                 // 회원가입
                 signUpService.register(SignUp.builder()
-                        .user_id(socialLoginResult.getId())
-                        .username(socialLoginResult.getNickname())
-                        .profile_url(socialLoginResult.getProfile_image_url())
-                        .login_type(String.valueOf(kakaoLoginType))
-                        .build());
+                                                .user_id(socialLoginResult.getId())
+                                                .username(socialLoginResult.getNickname())
+                                                .profile_url(socialLoginResult.getProfile_image_url())
+                                                .login_type(String.valueOf(kakaoLoginType))
+                                                .build());
 
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
@@ -130,7 +130,7 @@ public class SocialLoginController {
             log.info("claims (token 넣기 전): {}", claims);
 
             String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
-            String refreshToken = JWTUtil.generateToken(claims, refreshTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);
@@ -163,8 +163,8 @@ public class SocialLoginController {
 
         // JWTTokenDTO 정의, 로그인 타입 세팅
         JWTTokenDTO tokenDTO = JWTTokenDTO.builder()
-                .loginType(googleLoginType)
-                .build();
+                                            .loginType(googleLoginType)
+                                            .build();
         try {
             socialLoginResult = googleService.login(code);
             String dbId = socialLoginResult.getId();
@@ -225,7 +225,7 @@ public class SocialLoginController {
             log.info("claims (token 넣기 전): {}", claims);
 
             String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
-            String refreshToken = JWTUtil.generateToken(claims, refreshTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);
@@ -267,8 +267,8 @@ public class SocialLoginController {
 
         // JWTTokenDTO 정의, 로그인 타입 세팅
         JWTTokenDTO tokenDTO = JWTTokenDTO.builder()
-                .loginType(githubLoginType)
-                .build();
+                                            .loginType(githubLoginType)
+                                            .build();
 
         try {
             socialLoginResult = githubService.login(code);
@@ -330,7 +330,7 @@ public class SocialLoginController {
             log.info("claims (token 넣기 전): {}", claims);
 
             String accessToken = JWTUtil.generateToken(claims, accessTokenTime);
-            String refreshToken = JWTUtil.generateToken(claims, refreshTokenTime);
+            String refreshToken = JWTUtil.generateToken(claims, refresgTokenTime);
             log.info("user accessToken: {}, refreshToken: {}", accessToken, refreshToken);
 
             claims.put("access_token", accessToken);
