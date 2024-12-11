@@ -23,13 +23,14 @@ public class JWTCheckFilter extends OncePerRequestFilter {
         // Swagger 및 특정 경로 필터 제외
         if (path.startsWith("/v3/api-docs") ||           // Swagger 명세 제외
                 path.startsWith("/swagger-ui") ||            // Swagger UI 제외
+                path.startsWith("/api/member/login") ||      // 로그인 경로 제외
                 path.startsWith("/api/users/sign-up") ||     // 회원가입 제외
                 path.startsWith("/login") ||                 // 소셜 로그인 제외
                 path.startsWith("/api/notices") ||           // 알림 제외
                 path.startsWith("/actuator/health") ||       // Health Check 제외
                 path.startsWith("/api/admin") ||             // 관리자 경로 제외
-                path.startsWith("/api/music")                // 음악 관련 경로 제외
-        ) {
+                path.startsWith("/api/music"))
+        {
             log.info("{} 경로는 filter 적용x", path);     // true == Filter 적용 제외
             return true;
         }
