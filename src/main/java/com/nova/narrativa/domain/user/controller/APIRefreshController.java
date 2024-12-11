@@ -16,9 +16,6 @@ import java.util.Map;
 @Slf4j
 public class APIRefreshController {
 
-    private final int accessTokenTime = 60 * 24;     // 1일
-    private final int refreshTokenTime = 60 * 24;    // 1일
-
     @PostMapping("/api/users/refresh")
     public Map<String, Object> refresh(@RequestHeader("Authorization") String authHeader, String refreshToken ) throws Exception {
 
@@ -37,8 +34,8 @@ public class APIRefreshController {
 
         log.info("refresh claims: ", claims);
 
-        String newAccessToken = JWTUtil.generateToken(claims, accessTokenTime);
-        String newRefreshToken = checkTime((Integer) claims.get("exp")) == true ? JWTUtil.generateToken(claims, refreshTokenTime) : refreshToken;
+        String newAccessToken = JWTUtil.generateToken(claims, 10);
+        String newRefreshToken = checkTime((Integer) claims.get("exp")) == true ? JWTUtil.generateToken(claims, 60 * 24) : refreshToken;
 
         return Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken);
     }
