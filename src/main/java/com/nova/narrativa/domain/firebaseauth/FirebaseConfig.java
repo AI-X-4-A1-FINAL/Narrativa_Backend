@@ -4,9 +4,9 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,20 +32,20 @@ public class FirebaseConfig {
     @Value("${spring.firebase.client-id}")
     private String clientId;
 
-    @Bean
-    public FirebaseApp firebaseApp() throws IOException {
-        FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(createFirebaseCredentialStream()))
-                .setProjectId(projectId)
-                .build();
+    @PostConstruct
+    public void initializeFirebase() {
+        try {
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(createFirebaseCredentialStream()))
+                    .setProjectId(projectId)
+                    .build();
 
-        // 이미 초기화되어 있다면 기존 인스턴스 반환
-        if (!FirebaseApp.getApps().isEmpty()) {
-            return FirebaseApp.getInstance();
+            if (FirebaseApp.getApps().isEmpty()) {
+                FirebaseApp.initializeApp(options);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Firebase 초기화 중 오류 발생", e);
         }
-
-        // 새로 초기화
-        return FirebaseApp.initializeApp(options);
     }
 
     private InputStream createFirebaseCredentialStream() throws IOException {
