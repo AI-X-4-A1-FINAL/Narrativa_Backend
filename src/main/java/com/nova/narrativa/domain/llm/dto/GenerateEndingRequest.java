@@ -15,5 +15,5 @@ public class GenerateEndingRequest {
     private String genre;
 
     @NotNull
-    private String userSelect;
+    private String userChoice;
 }
