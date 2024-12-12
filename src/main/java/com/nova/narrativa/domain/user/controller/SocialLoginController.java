@@ -54,12 +54,12 @@ public class SocialLoginController {
         this.frontSignupPart = frontSignupPart;
         this.redirectUrl = frontUrl + frontSignupPart;
         this.serverDomainUrl = getDomainFromUrl(serverUrl);
-        log.info("serverDomainUrl: {}", serverDomainUrl);
+//        log.info("serverDomainUrl: {}", serverDomainUrl);
     }
 
     @GetMapping("/kakao")
     public void kakaoLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
-        log.info("code = {}", code);
+//        log.info("code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = frontUrl + "/home";
         User.LoginType kakaoLoginType = User.LoginType.KAKAO;
@@ -76,13 +76,13 @@ public class SocialLoginController {
                     .userId(socialLoginResult.getId())
                     .loginType(kakaoLoginType)
                     .build();
-            log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
+//            log.info("userExistenceDto = {}, {}", userExistenceDto, userExistenceDto.getUserId().getClass());
 
             tokenDTO.setId(dbId);   // JWTTokenDTO id값 세팅
 
             // DB 조회 후, 해당 유저 존재시 /home으로 redirect
             if (signUpService.isUserExist(userExistenceDto)) {
-                log.info("해당 유저가 존재합니다.");
+//                log.info("해당 유저가 존재합니다.");
                 Optional<User> userOptional = signUpService.getUserId(userExistenceDto);
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));

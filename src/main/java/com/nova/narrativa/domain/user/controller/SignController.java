@@ -28,7 +28,7 @@ public class SignController {
     // 회원가입
     @PostMapping("/users/sign-up")
     public ResponseEntity<String> signUp(@RequestBody SignUp signUp) {
-        log.info("Sign up: {}", signUp);
+//        log.info("Sign up: {}", signUp);
 
         try {
             // 회원가입 처리
@@ -50,7 +50,7 @@ public class SignController {
                                              HttpServletRequest request) {
         Long seq = RequestParseUtil.getSeq(request);
 
-        log.info("Deactivate user: {}", seq);
+//        log.info("Deactivate user: {}", seq);
 
         // TODO: 회원의 경우 본인 userId인 경우만 탈퇴 가능, 어드민의 경우 상관없이 가능
 
@@ -67,7 +67,7 @@ public class SignController {
     @GetMapping("/users")   // 회원 정보 전체 조회
     public ResponseEntity<UserProfileInfo> getUser(@RequestHeader("Authorization") String authorizationHeader,
                                                    HttpServletRequest request) {
-        log.info("Get user: {}", authorizationHeader);
+//        log.info("Get user: {}", authorizationHeader);
 
         Long seq = RequestParseUtil.getSeq(request);
 
@@ -89,7 +89,7 @@ public class SignController {
     @GetMapping("/users/status")
     public ResponseEntity<UserProfileInfo> getUserStatus(@RequestHeader("Authorization") String authorizationHeader,
                                                          HttpServletRequest request) {
-        log.info("getUserStatus authorizationHeader: {}", authorizationHeader);
+//        log.info("getUserStatus authorizationHeader: {}", authorizationHeader);
 
         Long seq = RequestParseUtil.getSeq(request);
 
@@ -110,7 +110,7 @@ public class SignController {
     public ResponseEntity<Object> updateUser(@RequestHeader("Authorization") String authorizationHeader,
                                              HttpServletRequest request,
                                              @RequestBody UserProfileInfo userProfileInfo) {
-        log.info("userProfileInfo: {}", userProfileInfo);
+//        log.info("userProfileInfo: {}", userProfileInfo);
 
         Long seq = RequestParseUtil.getSeq(request);
 

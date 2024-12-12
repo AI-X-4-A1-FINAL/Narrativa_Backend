@@ -29,7 +29,6 @@ public class ImageController {
         return ResponseEntity.ok(new ImageResponse(imageUrl));
     }
 
-
     // Endpoint to get a generated image from FastAPI
     @PostMapping("/generate-image")
     public ResponseEntity<String> generateImage(@RequestBody ImageRequest request) {
@@ -43,7 +42,6 @@ public class ImageController {
                     request.getN(),
                     request.getGenre()
             );
-            System.out.println(Arrays.toString(imageUrl.getBody()));
 
             // byte[] 데이터를 Base64로 변환
             byte[] imageBytes = imageUrl.getBody();
@@ -54,8 +52,6 @@ public class ImageController {
 
             // JSON으로 Base64 데이터를 반환
             return ResponseEntity.ok("{\"image\":\"data:image/jpg;base64," + base64Image + "\"}");
-
-
 
         } catch (Exception e) {
             // 예외가 발생하면 500 오류와 함께 에러 메시지를 반환
