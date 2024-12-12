@@ -28,8 +28,9 @@ public class Stage {
     @Lob
     private String conversationHistory; // 대화 기록
 
-    @Column(name = "image_url", length = 1000)
-    private String imageUrl; // 이미지 URL
+    @Lob
+    @Column(name = "image_url")
+    private byte[] imageUrl; // 이미지 URL
 
     @Lob
     private String choices; // 스토리 선택지
