@@ -22,12 +22,14 @@ public class JWTCheckFilter extends OncePerRequestFilter {
 
         // 해당 경로 filter 적용x
         if (path.startsWith("/api/users/sign-up") ||    // 회원가입 제외
-                path.startsWith("/login") ||                // 소셜 로그인 제외
-                path.startsWith("/api/notices") ||          // 알람 제외
-                path.startsWith("/actuator/health") ||      // health check 제외
-                path.startsWith("/api/admin")       ||      // 관리자 관련 모든 경로 제외
-                path.startsWith("/api/music")       ||      // 관리자 S3 관리 경로 제외
-                path.startsWith("/api/health")              // 관리자 배포상태 체크 제외
+                path.startsWith("/login")           ||  // 소셜 로그인 제외
+                path.startsWith("/api/notices")     ||  // 알람 제외
+                path.startsWith("/actuator/health") ||  // health check 제외
+                path.startsWith("/api/admin")       ||  // 관리자 관련 모든 경로 제외
+                path.startsWith("/api/music")       ||  // 관리자 S3 관리 경로 제외
+                path.startsWith("/api/health")      ||  // 관리자 배포상태 체크 제외
+                path.startsWith("/v3/api-docs")     ||  // 스웨거 명세서
+                path.startsWith("/swagger-ui")          // 스웨거 명세서
         ) {
             log.info(String.format("{} 경로는 filter 적용x", path));     // true == Filter check x
             return true;
