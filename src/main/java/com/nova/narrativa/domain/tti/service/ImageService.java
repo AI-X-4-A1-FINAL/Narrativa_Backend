@@ -156,7 +156,8 @@ public class ImageService {
                 stage.setImageUrl(responseData);
                 stageRepository.save(stage);
             }
-
+            // S3에 업로드하여 URL 생성
+            String s3ImageUrl = uploadImageToS3(responseData, gameId, stageNumber);
             // 프론트에는 원래의 이미지 URL을 반환
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)

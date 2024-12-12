@@ -1,0 +1,64 @@
+package com.nova.narrativa.domain.admin.util;
+
+import com.google.firebase.auth.FirebaseToken;
+import com.nova.narrativa.domain.admin.entity.AdminUser;
+import com.nova.narrativa.domain.admin.service.AuthService;
+import lombok.RequiredArgsConstructor;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Aspect
+@Component
+@RequiredArgsConstructor
+public class AdminAuthAspect {
+
+    private final AuthService authService;
+
+    @Around("@annotation(com.nova.narrativa.domain.admin.util.AdminAuth)")
+    public Object authenticateAdmin(ProceedingJoinPoint joinPoint) throws Throwable {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        String authorizationHeader = request.getHeader("Authorization");
+
+        try {
+            // 토큰 추출 및 검증
+            String idToken = extractToken(authorizationHeader);
+            FirebaseToken decodedToken = authService.verifyToken(idToken);
+            String uid = decodedToken.getUid();
+
+            // 사용자 확인
+            AdminUser adminUser = authService.findUserByUid(uid)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + uid));
+
+            // 관리자 권한 확인
+            if (adminUser.getRole() == AdminUser.Role.WAITING) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("승인 대기 중인 관리자는 접근할 수 없습니다.");
+            }
+
+            // 인증 성공 시 원래 메소드 실행
+            return joinPoint.proceed();
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("인증에 실패했습니다.");
+        }
+    }
+
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        throw new IllegalArgumentException("Authorization 헤더가 유효하지 않습니다.");
+    }
+}

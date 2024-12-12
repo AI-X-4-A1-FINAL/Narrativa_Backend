@@ -86,7 +86,7 @@ public class StoryController {
             return storyService.generateEnding(
                     request.getGameId().toString(),
                     request.getGenre(),
-                    request.getUserSelect()
+                    request.getUserChoice()
             ).onErrorResume(e -> {
                 logger.error("[게임 종료] 오류: {}", e.getMessage());
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request", e));
