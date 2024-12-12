@@ -4,9 +4,9 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,35 +17,35 @@ public class FirebaseConfig {
     @Value("${spring.firebase.type}")
     private String type;
 
-    @Value("${spring.firebase.project-id}")
+    @Value("${spring.firebase.project_id}")
     private String projectId;
 
-    @Value("${spring.firebase.private-key-id}")
+    @Value("${spring.firebase.private_key_id}")
     private String privateKeyId;
 
-    @Value("${spring.firebase.private-key}")
+    @Value("${spring.firebase.private_key}")
     private String privateKey;
 
-    @Value("${spring.firebase.client-email}")
+    @Value("${spring.firebase.client_email}")
     private String clientEmail;
 
-    @Value("${spring.firebase.client-id}")
+    @Value("${spring.firebase.client_id}")
     private String clientId;
 
-    @PostConstruct
-    public void initializeFirebase() {
-        try {
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(createFirebaseCredentialStream()))
-                    .setProjectId(projectId)
-                    .build();
+    @Bean
+    public FirebaseApp firebaseApp() throws IOException {
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(createFirebaseCredentialStream()))
+                .setProjectId(projectId)
+                .build();
 
-            if (FirebaseApp.getApps().isEmpty()) {
-                FirebaseApp.initializeApp(options);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Firebase 초기화 중 오류 발생", e);
+        // 이미 초기화되어 있다면 기존 인스턴스 반환
+        if (!FirebaseApp.getApps().isEmpty()) {
+            return FirebaseApp.getInstance();
         }
+
+        // 새로 초기화
+        return FirebaseApp.initializeApp(options);
     }
 
     private InputStream createFirebaseCredentialStream() throws IOException {

@@ -60,6 +60,10 @@ public class AuthService {
         return adminRepository.save(newAdmin);
     }
 
+    public Optional<AdminUser> findUserByEmail(String email) {
+        return adminRepository.findByEmail(email);
+    }
+
     public Optional<AdminUser> findUserByUid(String uid) {
         return adminRepository.findByUid(uid);
     }
