@@ -1,5 +1,6 @@
 package com.nova.narrativa.common.config;
 
+import com.nova.narrativa.common.filter.ApiKeyAuthFilter;  // 추가
 import com.nova.narrativa.common.filter.JWTCheckFilter;
 import com.nova.narrativa.common.handler.APILoginFailHandler;
 import com.nova.narrativa.common.handler.APILoginSuccessHandler;
@@ -22,19 +23,18 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 import java.util.List;
 
-
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-@EnableMethodSecurity(securedEnabled = true)    // method 보안(@PreAuthorize)
-@EnableWebSecurity                              // 웹 애플리케이션에서의 HTTP 보안
+@EnableMethodSecurity(securedEnabled = true)
+@EnableWebSecurity
 public class CustomSecurityConfig {
+
+    private final ApiKeyAuthFilter apiKeyAuthFilter;  // 추가
 
     @Value("${environments.narrativa-front.url}")
     private String frontUrl;
@@ -48,10 +48,11 @@ public class CustomSecurityConfig {
     @Value("${environments.narrativa-ml.url}")
     private String mlUrl;
 
-    // 인증/인가 필터 처리
+    @Value("${api.key}")
+    private String validApiKey;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         log.info("--------------------------- securityFilterChain ---------------------------");
 
         http.csrf(AbstractHttpConfigurer::disable);
@@ -60,20 +61,14 @@ public class CustomSecurityConfig {
             httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource());
         });
 
-        // 세션 생성 x
         http.sessionManagement(httpSecuritySessionManagementConfigurer -> {
             httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.NEVER);
         });
 
-        http.formLogin(AbstractHttpConfigurer::disable);    // 기본 로그인 페이지 비활성화
+        http.formLogin(AbstractHttpConfigurer::disable);
 
-//        http.formLogin(config -> {
-//            config.loginPage("/api/member/login");
-//            config.successHandler(new APILoginSuccessHandler());
-//            config.failureHandler(new APILoginFailHandler());
-//        });
-
-        http.addFilterBefore(new JWTCheckFilter(), UsernamePasswordAuthenticationFilter.class);
+        // API 키를 생성자를 통해 전달
+        http.addFilterBefore(new JWTCheckFilter(validApiKey), UsernamePasswordAuthenticationFilter.class);
 
         http.exceptionHandling(config -> {
             config.accessDeniedHandler(new CustomAccessDeniedHandler());
@@ -82,16 +77,13 @@ public class CustomSecurityConfig {
         return http.build();
     }
 
-    // 암호화
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // cors 관련 설정
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(frontUrl, serverUrl, adminUrl, mlUrl));
