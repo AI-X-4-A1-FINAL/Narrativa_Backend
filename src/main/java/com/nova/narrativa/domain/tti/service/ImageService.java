@@ -69,9 +69,7 @@ public class ImageService {
                 .bucket(bucketName)
                 .prefix("survival_images/")
                 .build();
-
         var response = s3Client.listObjectsV2(request);
-
         List<String> imageFiles = new ArrayList<>();
         for (var s3Object : response.contents()) {
             String key = s3Object.key();
@@ -80,7 +78,6 @@ public class ImageService {
                 imageFiles.add(key);
             }
         }
-
         return imageFiles;
     }
 
@@ -90,18 +87,15 @@ public class ImageService {
                 .signatureDuration(Duration.ofMinutes(60))
                 .getObjectRequest(getRequest -> getRequest.bucket(bucketName).key(key))
                 .build();
-
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
     // Get a random image file from the list of image files
     public String getRandomImage() {
         List<String> imageFiles = getImageFiles();
-
         if (imageFiles.isEmpty()) {
             throw new NoImageFileFoundException("No image files found in the bucket.");
         }
-
         String randomImageFile = imageFiles.get(new Random().nextInt(imageFiles.size()));
         return generatePresignedUrl(randomImageFile);
     }
@@ -149,7 +143,6 @@ public class ImageService {
                         return stageRepository.save(newStage);  // 새 Stage 저장
                     });
 
-//            // imageUrl이 이미 저장되어 있지 않다면 업데이트
             if (stage.getImageUrl() == null || stage.getImageUrl().length == 0) {
                 stage.setImageUrl(responseData);
                 stageRepository.save(stage);
@@ -164,11 +157,11 @@ public class ImageService {
                     .body(responseData);
 
         }  catch (Exception e) {
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Failed to process request: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         }
     }
+
 
     public String uploadImageToS3(byte[] imageBytes, Long gameId, int stageNumber) {
         try {
@@ -193,10 +186,7 @@ public class ImageService {
 
             // 업로드된 파일의 S3 URL 반환
             String s3Url = "https://" + bucketName + ".s3.amazonaws.com/" + fileName;
-            //System.out.println(s3Url);
-
             return s3Url;
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload image to S3", e);
         }

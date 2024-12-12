@@ -1,5 +1,7 @@
 package com.nova.narrativa.domain.llm.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nova.narrativa.domain.llm.dto.StoryStartRequest;
 import com.nova.narrativa.domain.llm.service.StoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,10 +26,12 @@ public class StoryController {
 
     private final StoryService storyService;
     private static final Logger logger = LoggerFactory.getLogger(StoryController.class);
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public StoryController(StoryService storyService) {
+    public StoryController(StoryService storyService, ObjectMapper objectMapper) {
         this.storyService = storyService;
+        this.objectMapper = objectMapper;
     }
 
     @Operation(
