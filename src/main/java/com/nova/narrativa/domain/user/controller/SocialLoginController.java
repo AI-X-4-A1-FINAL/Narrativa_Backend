@@ -1,5 +1,6 @@
 package com.nova.narrativa.domain.user.controller;
 
+import com.nova.narrativa.domain.dashboard.service.UserLoginHistoryService;
 import com.nova.narrativa.domain.user.dto.JWTTokenDTO;
 import com.nova.narrativa.domain.user.dto.SignUp;
 import com.nova.narrativa.domain.user.util.JWTUtil;
@@ -38,13 +39,15 @@ public class SocialLoginController {
     private final int accessTokenTime = 60 * 24;     // 1일
     private final int refreshTokenTime = 60 * 24;    // 1일
 
+    private final UserLoginHistoryService loginHistoryService; // 유저 활동기록용
+
     public SocialLoginController(KakaoService kakaoService,
                                  GoogleService googleService,
                                  GithubService githubService,
                                  SignUpService signUpService,
                                  @Value("${environments.narrativa-front.url}") String frontUrl,
                                  @Value("${environments.narrativa-front.signup-part}") String frontSignupPart,
-                                 @Value("${environments.server.url}") String serverUrl) {
+                                 @Value("${environments.server.url}") String serverUrl, UserLoginHistoryService loginHistoryService) {
 
         this.kakaoService = kakaoService;
         this.googleService = googleService;
@@ -52,6 +55,7 @@ public class SocialLoginController {
         this.signUpService = signUpService;
         this.frontUrl = frontUrl;
         this.frontSignupPart = frontSignupPart;
+        this.loginHistoryService = loginHistoryService;
         this.redirectUrl = frontUrl + frontSignupPart;
         this.serverDomainUrl = getDomainFromUrl(serverUrl);
 //        log.info("serverDomainUrl: {}", serverDomainUrl);
@@ -88,6 +92,9 @@ public class SocialLoginController {
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = String.valueOf(user.getId());
 
+                // 로그인 히스토리 기록 추가
+                loginHistoryService.recordLogin(user.getUserId());
+
                 // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
                 if (user.getStatus() == User.Status.INACTIVE) {
                     user.setStatus(User.Status.ACTIVE);
@@ -119,6 +126,9 @@ public class SocialLoginController {
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = String.valueOf(user.getId());
+
+                // 로그인 히스토리 기록 추가
+                loginHistoryService.recordLogin(user.getUserId());
 
                 tokenDTO.setUserId(dbId);
                 tokenDTO.setStatus(user.getStatus());
@@ -183,6 +193,9 @@ public class SocialLoginController {
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = String.valueOf(user.getId());
 
+                // 로그인 히스토리 기록 추가
+                loginHistoryService.recordLogin(user.getUserId());
+
                 // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
                 if (user.getStatus() == User.Status.INACTIVE) {
                     user.setStatus(User.Status.ACTIVE);
@@ -214,6 +227,9 @@ public class SocialLoginController {
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = String.valueOf(user.getId());
+
+                // 로그인 히스토리 기록 추가
+                loginHistoryService.recordLogin(user.getUserId());
 
                 tokenDTO.setUserId(String.valueOf(dbId));
                 tokenDTO.setStatus(user.getStatus());
@@ -288,6 +304,9 @@ public class SocialLoginController {
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = String.valueOf(user.getId());
 
+                // 로그인 히스토리 기록 추가
+                loginHistoryService.recordLogin(user.getUserId());
+
                 // 로그인 버튼 클릭시, IF 해당 유저 탈퇴(INACTIVE) 상태 -> 정상(ACTIVE) 상태로 변환
                 if (user.getStatus() == User.Status.INACTIVE) {
                     user.setStatus(User.Status.ACTIVE);
@@ -319,6 +338,9 @@ public class SocialLoginController {
 
                 User user = userOptional.orElseThrow(() -> new RuntimeException("해당 유저가 존재하지 않습니다."));
                 dbId = String.valueOf(user.getId());
+
+                // 로그인 히스토리 기록 추가
+                loginHistoryService.recordLogin(user.getUserId());
 
                 tokenDTO.setUserId(String.valueOf(dbId));
                 tokenDTO.setStatus(user.getStatus());
