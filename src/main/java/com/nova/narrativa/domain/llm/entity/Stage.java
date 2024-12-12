@@ -26,9 +26,6 @@ public class Stage {
     private String userChoice; // 사용자가 선택한 내용
 
     @Lob
-    private String conversationHistory; // 대화 기록
-
-    @Lob
     @Column(name = "image_url")
     private byte[] imageUrl; // 이미지 URL
 
