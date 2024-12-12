@@ -62,9 +62,6 @@ public class JWTCheckFilter extends OncePerRequestFilter {
         // prompts API는 API 키로 인증
         if (requestURI.startsWith("/api/prompts")) {
             String apiKey = request.getHeader("X-API-Key");
-            log.info("Request URI: {}", requestURI);
-            log.info("Received API Key: {}", apiKey);
-            log.info("Valid API Key: {}", validApiKey);
 
             if (apiKey == null || !apiKey.equals(validApiKey)) {
                 response.setContentType("application/json; charset=utf-8");
