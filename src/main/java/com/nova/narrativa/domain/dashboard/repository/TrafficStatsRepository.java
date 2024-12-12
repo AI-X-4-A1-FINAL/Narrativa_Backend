@@ -24,4 +24,23 @@ public interface TrafficStatsRepository extends JpaRepository<TrafficStats, Long
             "ORDER BY t.timestamp DESC")
     List<TrafficStats> findAllByTimestampBetween(@Param("startTime") LocalDateTime startTime,
                                                  @Param("endTime") LocalDateTime endTime);
+
+    @Query("SELECT DATE(t.timestamp) as date, SUM(t.visitCount) as total " +
+            "FROM TrafficStats t " +
+            "WHERE t.timestamp >= :startDate AND t.timestamp <= :endDate " +
+            "GROUP BY DATE(t.timestamp) " +
+            "ORDER BY DATE(t.timestamp) DESC")
+    List<Object[]> findDailyTrafficForDateRange(LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query("SELECT HOUR(t.timestamp) as hour, SUM(t.visitCount) as count " +
+            "FROM TrafficStats t " +
+            "WHERE t.timestamp >= :startOfDay AND t.timestamp <= :now " +
+            "GROUP BY HOUR(t.timestamp) " +
+            "ORDER BY HOUR(t.timestamp)")
+    List<Object[]> findHourlyTrafficForToday(LocalDateTime startOfDay, LocalDateTime now);
+
+    @Query("SELECT SUM(t.visitCount) " +
+            "FROM TrafficStats t " +
+            "WHERE t.timestamp >= :startOfWeek AND t.timestamp <= :now")
+    Long sumVisitCountForWeek(LocalDateTime startOfWeek, LocalDateTime now);
 }
