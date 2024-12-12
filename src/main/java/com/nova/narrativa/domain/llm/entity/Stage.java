@@ -26,10 +26,8 @@ public class Stage {
     private String userChoice; // 사용자가 선택한 내용
 
     @Lob
-    private String conversationHistory; // 대화 기록
-
-    @Column(name = "image_url", length = 1000)
-    private String imageUrl; // 이미지 URL
+    @Column(name = "image_url", columnDefinition = "LONGBLOB")
+    private byte[] imageUrl;
 
     @Lob
     private String choices; // 스토리 선택지

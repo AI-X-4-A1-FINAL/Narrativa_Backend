@@ -125,6 +125,13 @@ public class StoryService {
                         Game game = gameRepository.findById(Long.parseLong(gameId))
                                 .orElseThrow(() -> new RuntimeException("Game not found"));
 
+                        // 마지막 스테이지를 조회하여 EndTime 설정
+                        Optional<Stage> lastStageOptional = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId));
+                        lastStageOptional.ifPresent(lastStage -> {
+                            lastStage.setEndTime(LocalDateTime.now());
+                            stageRepository.save(lastStage);
+                        });
+
                         int stageNumber = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId))
                                 .map(Stage::getStageNumber)
                                 .orElse(0) + 1;
@@ -188,6 +195,7 @@ public class StoryService {
                     }
                 });
     }
+
     // 히스토리 조회
     public List<Map<String, Object>> getGameStagesForUser(Long id) {
         try {
@@ -219,16 +227,11 @@ public class StoryService {
                         if (stage.getStageNumber() == 6) {
                             result.put("story", stage.getStory());
                         } else if (stage.getStageNumber() == 5) {
-                            String fullFilePath = stage.getImageUrl(); // full path including bucket name
+                            byte[] endingImage = stage.getImageUrl();
                             try {
-                                // S3 경로에서 파일을 가져오기
-                                String imageUrl = imageService.getImageUrlFromS3(fullFilePath);
-                                result.put("imageUrl", imageUrl);
-                            } catch (FileNotFoundException e) {
-                                logger.warn("[Service] File not found in S3 at path: {}", fullFilePath);
-                                result.put("imageUrl", "/default-thumbnail.jpg");
-                            } catch (IOException | IllegalArgumentException e) {
-                                logger.error("[Service] Error reading S3 file at path: {}. Error: {}", fullFilePath, e.getMessage());
+                                result.put("imageUrl", endingImage);
+                            } catch (IllegalArgumentException e) {
+                                logger.error("[Service] Error reading S3 file at path: {}. Error: {}", endingImage, e.getMessage());
                                 result.put("imageUrl", "/default-thumbnail.jpg");
                             }
                         }

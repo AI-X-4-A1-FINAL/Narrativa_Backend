@@ -38,7 +38,7 @@ public class MusicService {
 
     @PreDestroy
     public void closeS3Client() {
-        log.info("Closing S3 client...");
+//        log.info("Closing S3 client...");
         s3Client.close();
     }
 
@@ -65,7 +65,7 @@ public class MusicService {
         List<String> matchingFiles = response.contents().stream()
                 .filter(s3Object -> {
                     String key = s3Object.key();
-                    log.debug("Checking file: {}", key);
+//                    log.debug("Checking file: {}", key);
 
                     try {
                         GetObjectTaggingResponse taggingResponse = s3Client.getObjectTagging(
@@ -93,7 +93,7 @@ public class MusicService {
                 .map(S3Object::key)
                 .collect(Collectors.toList());
 
-        log.info("Found {} files matching genre '{}'", matchingFiles.size(), genre);
+//        log.info("Found {} files matching genre '{}'", matchingFiles.size(), genre);
         return matchingFiles;
     }
 
@@ -111,7 +111,7 @@ public class MusicService {
                     .build();
 
             String presignedUrl = s3Presigner.presignGetObject(presignRequest).url().toString();
-            log.debug("Generated presigned URL for key '{}': {}", key, presignedUrl);
+//            log.debug("Generated presigned URL for key '{}': {}", key, presignedUrl);
             return presignedUrl;
         } catch (S3Exception e) {
             log.error("Error generating presigned URL for key: {}", key, e);
@@ -134,7 +134,7 @@ public class MusicService {
         }
 
         String randomFile = files.get(new Random().nextInt(files.size()));
-        log.info("Randomly selected file for genre '{}': {}", genre, randomFile);
+//        log.info("Randomly selected file for genre '{}': {}", genre, randomFile);
         return generatePresignedUrl(randomFile);
     }
 
@@ -286,7 +286,7 @@ public class MusicService {
                     .build();
 
             s3Client.deleteObject(deleteRequest);
-            log.info("Successfully deleted file: {}", filename);
+//            log.info("Successfully deleted file: {}", filename);
         } catch (S3Exception e) {
             log.error("Error deleting music file: {}", filename, e);
             throw new RuntimeException("Failed to delete music file: " + filename, e);
@@ -304,7 +304,7 @@ public class MusicService {
                     .build();
 
             String presignedUrl = s3Presigner.presignGetObject(presignRequest).url().toString();
-            log.debug("Generated admin presigned URL for key '{}': {}", key, presignedUrl);
+//            log.debug("Generated admin presigned URL for key '{}': {}", key, presignedUrl);
             return presignedUrl;
         } catch (S3Exception e) {
             log.error("Error generating admin presigned URL for key: {}", key, e);

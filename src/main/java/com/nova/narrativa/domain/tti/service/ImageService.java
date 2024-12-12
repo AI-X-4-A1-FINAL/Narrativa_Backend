@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -106,6 +107,7 @@ public class ImageService {
         return generatePresignedUrl(randomImageFile);
     }
 
+    @Transactional
     public ResponseEntity<byte[]> generateImage(Long gameId, int stageNumber, String prompt, String size, int n, String genre) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
         String gameIdStr = String.valueOf(gameId);
@@ -137,18 +139,30 @@ public class ImageService {
             if (responseData == null || responseData.length == 0) {
                 throw new RuntimeException("Received empty response from FastAPI");
             }
-            System.out.println(Arrays.toString(responseData));
 
+            // 해당 gameId와 stageNumber를 기준으로 Stage 엔터티 조회
+            Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
+                    .orElseGet(() -> {
+                        // Stage가 없으면 새로 생성
+                        Stage newStage = new Stage();
+                        newStage.setGame(gameRepository.findById(gameId).orElseThrow(() -> new EntityNotFoundException("Game not found")));
+                        newStage.setStageNumber(stageNumber);
+                        newStage.setImageUrl(responseData); // 새로 생성된 Stage에 imageUrl 추가
+                        return stageRepository.save(newStage);  // 새 Stage 저장
+                    });
+
+            // imageUrl이 이미 저장되어 있지 않다면 업데이트
+            if (stage.getImageUrl() == null || stage.getImageUrl().length == 0) {
+                stage.setImageUrl(responseData);
+                stageRepository.save(stage);
+            }
             // S3에 업로드하여 URL 생성
             String s3ImageUrl = uploadImageToS3(responseData, gameId, stageNumber);
-
             // 프론트에는 원래의 이미지 URL을 반환
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)
-                    .body(responseData);  // 원래의 imageUrl을 프론트로 반환
-
+                    .body(responseData);
         }  catch (Exception e) {
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Failed to process request: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         }
@@ -186,46 +200,4 @@ public class ImageService {
         }
     }
 
-
-    // S3 버켓에 있는 이미지 json 가져와서 그 안에 있는 이미지파일 읽어오는 메서드임.
-    public String getImageUrlFromS3(String fullFilePath) throws IOException {
-
-        String filePath = fullFilePath.substring(bucketName.length() + 1); // 버킷 이름을 제외한 경로 부분만 분리
-
-//        logger.info("[Service] Attempting to fetch file from S3 - Bucket: {}, Path: {}", bucketName, filePath);
-
-        // S3 객체가 존재하는지 확인
-        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
-                .bucket(bucketName)
-                .key(filePath)  // 경로에서 버킷 이름을 제외한 부분만 사용
-                .build();
-
-        try {
-            // 객체가 존재하면 헤드 요청이 성공
-            s3Client.headObject(headObjectRequest);
-        } catch (NoSuchKeyException e) {
-            // 파일이 존재하지 않으면 예외 처리
-            throw new FileNotFoundException("File does not exist in S3 at path: " + filePath);
-        }
-
-        // 파일이 존재하면 S3에서 가져오기
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(filePath)  // 경로에서 버킷 이름을 제외한 부분만 사용
-                .build();
-
-        try (InputStream inputStream = s3Client.getObject(getObjectRequest)) {
-            // JSON 파싱
-            Map<String, Object> jsonData = objectMapper.readValue(inputStream, Map.class);
-            if (jsonData.containsKey("imageUrl")) {
-                String imageUrl = (String) jsonData.get("imageUrl");
-//                logger.info("[Service] Found imageUrl in S3 JSON: {}", imageUrl);
-                return imageUrl;
-            } else {
-                throw new IllegalArgumentException("The JSON file does not contain 'imageUrl' key");
-            }
-        }
-    }
-
 }
-
