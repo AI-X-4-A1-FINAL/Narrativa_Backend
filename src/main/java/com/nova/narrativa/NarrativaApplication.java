@@ -6,7 +6,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.nova.narrativa", "com.nova.narrativa.domain.llm.service"})
 @EnableScheduling
 public class NarrativaApplication {
 
