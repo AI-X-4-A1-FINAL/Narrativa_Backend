@@ -14,11 +14,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/stats")
-@CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
-@RequiredArgsConstructor
+@CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-client.url}"}, allowCredentials = "true")
 public class StatisticsController {
+
     private final StatisticsService statisticsService;
     private final AuthService authService;
+
+    public StatisticsController(StatisticsService statisticsService, AuthService authService) {
+        this.statisticsService = statisticsService;
+        this.authService = authService;
+    }
 
     @GetMapping("/basic")
     public ResponseEntity<?> getBasicStats(@RequestHeader("Authorization") String authorizationHeader) {
