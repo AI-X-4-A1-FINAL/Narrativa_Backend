@@ -137,7 +137,6 @@ public class ImageService {
             if (responseData == null || responseData.length == 0) {
                 throw new RuntimeException("Received empty response from FastAPI");
             }
-            System.out.println(Arrays.toString(responseData));
 
             // 해당 gameId와 stageNumber를 기준으로 Stage 엔터티 조회
             Stage stage = stageRepository.findByGame_GameIdAndStageNumber(gameId, stageNumber)
