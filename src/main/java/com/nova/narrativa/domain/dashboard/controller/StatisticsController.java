@@ -5,7 +5,6 @@ import com.google.firebase.auth.FirebaseToken;
 import com.nova.narrativa.domain.admin.entity.AdminUser;
 import com.nova.narrativa.domain.admin.service.AuthService;
 import com.nova.narrativa.domain.dashboard.service.StatisticsService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +13,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/stats")
-@CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
-@RequiredArgsConstructor
+@CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
 public class StatisticsController {
+
     private final StatisticsService statisticsService;
     private final AuthService authService;
+
+    public StatisticsController(StatisticsService statisticsService, AuthService authService) {
+        this.statisticsService = statisticsService;
+        this.authService = authService;
+    }
 
     @GetMapping("/basic")
     public ResponseEntity<?> getBasicStats(@RequestHeader("Authorization") String authorizationHeader) {

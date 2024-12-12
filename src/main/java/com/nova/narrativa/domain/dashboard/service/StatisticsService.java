@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class StatisticsService {
     private final StatsQueryRepository statsQueryRepository;
