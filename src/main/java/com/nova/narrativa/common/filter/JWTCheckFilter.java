@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -13,6 +15,12 @@ import java.util.Map;
 
 @Slf4j
 public class JWTCheckFilter extends OncePerRequestFilter {
+
+    private final String validApiKey;
+
+    public JWTCheckFilter(String validApiKey) {
+        this.validApiKey = validApiKey;
+    }
 
     // login 같이 filter 적용x
     @Override
@@ -47,8 +55,26 @@ public class JWTCheckFilter extends OncePerRequestFilter {
 
         log.info("----------------------------");
 
+        String requestURI = request.getRequestURI();
         String tokenHeader = request.getHeader("Authorization");
         log.info("tokenHeader: {}", tokenHeader);
+
+        // prompts API는 API 키로 인증
+        if (requestURI.startsWith("/api/prompts")) {
+            String apiKey = request.getHeader("X-API-Key");
+            log.info("Request URI: {}", requestURI);
+            log.info("Received API Key: {}", apiKey);
+            log.info("Valid API Key: {}", validApiKey);
+
+            if (apiKey == null || !apiKey.equals(validApiKey)) {
+                response.setContentType("application/json; charset=utf-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"message\": \"유효하지 않은 API 키입니다.\"}");
+                return;
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         try {
             String accessToken = tokenHeader.substring(7); // "Bearer "를 제거한 토큰만 가져옴
