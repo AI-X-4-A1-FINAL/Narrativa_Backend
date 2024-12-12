@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -38,11 +39,19 @@ public class StoryController {
             description = "초기 세계관 생성 엔드포인트입니다. 장르, 테그, 유저Id는 필수 값입니다.")
     @PostMapping("/start")
     public Mono<Map<String, Object>> startGame(@Valid @RequestBody StoryStartRequest request) {
-        return storyService.startGame(
-                request.getGenre(),
-                request.getTags(),
-                request.getUserId()
-        );
+        try {
+            return storyService.startGame(
+                    request.getGenre(),
+                    request.getTags(),
+                    request.getUserId()
+            ).onErrorResume(e -> {
+                logger.error("[게임 시작] 오류: {}", e.getMessage());
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request", e));
+            });
+        } catch (Exception e) {
+            logger.error("[게임 시작] 예기치 못한 오류: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
     }
 
     @Operation(
@@ -50,11 +59,22 @@ public class StoryController {
             description = "초기 세계관 이후 게임 진행 엔드포인트입니다. 장르, 게임ID, 유저의 선택은 필수입니다.")
     @PostMapping("/chat")
     public Mono<String> continueStory(@Valid @RequestBody ContinueStoryRequest request) {
-        return storyService.continueStory(
-                request.getGameId().toString(),
-                request.getGenre(),
-                request.getUserSelect()
-        );
+        try {
+            return storyService.continueStory(
+                    request.getGameId().toString(),
+                    request.getGenre(),
+                    request.getUserSelect()
+            ).onErrorResume(e -> {
+                logger.error("[게임 진행] 오류: {}", e.getMessage());
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request", e));
+            });
+        } catch (IllegalArgumentException e) {
+            logger.warn("[게임 진행] 잘못된 입력: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid input", e);
+        } catch (Exception e) {
+            logger.error("[게임 진행] 예기치 못한 오류: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
     }
 
     @Operation(
@@ -62,14 +82,24 @@ public class StoryController {
             description = "게임 엔딩페이지 엔드포인트입니다. 장르, 게임ID, 유저의 선택은 필수입니다.")
     @PostMapping("/end")
     public Mono<String> generateEnding(@Valid @RequestBody GenerateEndingRequest request) {
-        return storyService.generateEnding(
-                request.getGameId().toString(),
-                request.getGenre(),
-                request.getUserSelect()
-        );
+        try {
+            return storyService.generateEnding(
+                    request.getGameId().toString(),
+                    request.getGenre(),
+                    request.getUserSelect()
+            ).onErrorResume(e -> {
+                logger.error("[게임 종료] 오류: {}", e.getMessage());
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request", e));
+            });
+        } catch (IllegalStateException e) {
+            logger.warn("[게임 종료] 잘못된 상태: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Invalid game state", e);
+        } catch (Exception e) {
+            logger.error("[게임 종료] 예기치 못한 오류: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
     }
 
-    // 히스토리 조회용 메서드
     @Operation(
             summary = "히스토리",
             description = "히스토리 조회 엔드포인트입니다. 유저Id는 필수 값입니다.")
@@ -80,11 +110,15 @@ public class StoryController {
             List<Map<String, Object>> result = storyService.getGameStagesForUser(userId);
             return ResponseEntity.ok(result);
         } catch (EntityNotFoundException e) {
-            logger.warn("[컨트롤러] Entity not found: {}", e.getMessage());
+            logger.warn("[히스토리] Entity not found: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "Not Found: " + e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            logger.warn("[히스토리] 잘못된 입력: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid request: " + e.getMessage()));
         } catch (Exception e) {
-            logger.error("[컨트롤러] Error: {}", e.getMessage());
+            logger.error("[히스토리] 예기치 못한 오류: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error: " + e.getMessage()));
         }
