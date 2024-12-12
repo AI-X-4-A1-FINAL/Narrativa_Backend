@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -106,6 +107,7 @@ public class ImageService {
         return generatePresignedUrl(randomImageFile);
     }
 
+    @Transactional
     public ResponseEntity<byte[]> generateImage(Long gameId, int stageNumber, String prompt, String size, int n, String genre) {
         String generateImageUrl = fastApiUrl + "/api/images/generate-image";
         String gameIdStr = String.valueOf(gameId);
@@ -149,22 +151,17 @@ public class ImageService {
                         return stageRepository.save(newStage);  // 새 Stage 저장
                     });
 
-//            // imageUrl이 이미 저장되어 있지 않다면 업데이트
+            // imageUrl이 이미 저장되어 있지 않다면 업데이트
             if (stage.getImageUrl() == null || stage.getImageUrl().length == 0) {
                 stage.setImageUrl(responseData);
                 stageRepository.save(stage);
             }
 
-            // S3에 업로드하여 URL 생성
-            String s3ImageUrl = uploadImageToS3(responseData, gameId, stageNumber);
-
             // 프론트에는 원래의 이미지 URL을 반환
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)
                     .body(responseData);
-
         }  catch (Exception e) {
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Failed to process request: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         }
@@ -203,4 +200,3 @@ public class ImageService {
     }
 
 }
-

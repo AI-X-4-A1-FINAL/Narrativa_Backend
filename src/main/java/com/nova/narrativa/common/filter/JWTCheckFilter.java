@@ -39,11 +39,11 @@ public class JWTCheckFilter extends OncePerRequestFilter {
                 path.startsWith("/v3/api-docs")     ||  // 스웨거 명세서
                 path.startsWith("/swagger-ui")          // 스웨거 명세서
         ) {
-            log.info(String.format("{} 경로는 filter 적용x", path));     // true == Filter check x
+//            log.info(String.format("{} 경로는 filter 적용x", path));     // true == Filter check x
             return true;
         }
 
-        log.info(String.format("{} 경로는 filter 적용o", path));         // false == Filter check o
+//        log.info(String.format("{} 경로는 filter 적용o", path));         // false == Filter check o
         return false;
     }
 
@@ -53,11 +53,11 @@ public class JWTCheckFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        log.info("----------------------------");
+//        log.info("----------------------------");
 
         String requestURI = request.getRequestURI();
         String tokenHeader = request.getHeader("Authorization");
-        log.info("tokenHeader: {}", tokenHeader);
+//        log.info("tokenHeader: {}", tokenHeader);
 
         // prompts API는 API 키로 인증
         if (requestURI.startsWith("/api/prompts")) {
@@ -80,7 +80,7 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             String accessToken = tokenHeader.substring(7); // "Bearer "를 제거한 토큰만 가져옴
             Map<String, Object> claims = JWTUtil.validateToken(accessToken);
 
-            log.info("JWT claims: {}", claims);
+//            log.info("JWT claims: {}", claims);
             request.setAttribute("claims", claims);
             filterChain.doFilter(request, response);
 
