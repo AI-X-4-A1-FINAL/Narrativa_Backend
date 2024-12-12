@@ -1,7 +1,8 @@
 package com.nova.narrativa.domain.llm.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nova.narrativa.domain.llm.dto.ContinueStoryRequest;
+import com.nova.narrativa.domain.llm.dto.GenerateEndingRequest;
+import com.nova.narrativa.domain.llm.dto.GetUserGameStagesRequest;
 import com.nova.narrativa.domain.llm.dto.StoryStartRequest;
 import com.nova.narrativa.domain.llm.service.StoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,12 +27,10 @@ public class StoryController {
 
     private final StoryService storyService;
     private static final Logger logger = LoggerFactory.getLogger(StoryController.class);
-    private final ObjectMapper objectMapper;
 
     @Autowired
-    public StoryController(StoryService storyService, ObjectMapper objectMapper) {
+    public StoryController(StoryService storyService) {
         this.storyService = storyService;
-        this.objectMapper = objectMapper;
     }
 
     @Operation(
@@ -50,35 +49,34 @@ public class StoryController {
             summary = "게임 페이지 진행",
             description = "초기 세계관 이후 게임 진행 엔드포인트입니다. 장르, 게임ID, 유저의 선택은 필수입니다.")
     @PostMapping("/chat")
-    public Mono<String> continueStory(@Valid @RequestBody Map<String, Object> request) {
-        Long gameId = Long.valueOf(String.valueOf(request.get("gameId")));
-        String genre = String.valueOf(request.get("genre"));
-        String userChoice = String.valueOf(request.get("userSelect"));
-
-        return storyService.continueStory(gameId.toString(), genre, userChoice);
+    public Mono<String> continueStory(@Valid @RequestBody ContinueStoryRequest request) {
+        return storyService.continueStory(
+                request.getGameId().toString(),
+                request.getGenre(),
+                request.getUserSelect()
+        );
     }
 
     @Operation(
             summary = "게임 종료",
             description = "게임 엔딩페이지 엔드포인트입니다. 장르, 게임ID, 유저의 선택은 필수입니다.")
     @PostMapping("/end")
-    public Mono<String> generateEnding(@Valid @RequestBody Map<String, Object> request) {
-        String gameId = String.valueOf(request.get("gameId"));
-        String genre = String.valueOf(request.get("genre"));
-        String userChoice = String.valueOf(request.get("userSelect"));
-
-        return storyService.generateEnding(gameId, genre, userChoice);
+    public Mono<String> generateEnding(@Valid @RequestBody GenerateEndingRequest request) {
+        return storyService.generateEnding(
+                request.getGameId().toString(),
+                request.getGenre(),
+                request.getUserSelect()
+        );
     }
 
     // 히스토리 조회용 메서드
     @Operation(
-               summary = "히스토리",
-               description = "히스토리 조회 엔드포인트입니다. 유저Id는 필수 값입니다.")
+            summary = "히스토리",
+            description = "히스토리 조회 엔드포인트입니다. 유저Id는 필수 값입니다.")
     @PostMapping("/history")
-    public ResponseEntity<?> getUserGameStages(@Valid @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> getUserGameStages(@Valid @RequestBody GetUserGameStagesRequest request) {
         try {
-            Long userId = Long.valueOf(String.valueOf(request.get("userId")));
-            // 서비스 호출
+            Long userId = request.getUserId();
             List<Map<String, Object>> result = storyService.getGameStagesForUser(userId);
             return ResponseEntity.ok(result);
         } catch (EntityNotFoundException e) {

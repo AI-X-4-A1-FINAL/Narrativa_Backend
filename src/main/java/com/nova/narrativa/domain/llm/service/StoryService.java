@@ -156,7 +156,6 @@ public class StoryService {
                 });
     }
 
-
     @Transactional
     public Mono<String> generateEnding(String gameId, String genre, String userChoice) {
         Map<String, Object> request = Map.of("game_id", gameId, "genre", genre, "user_choice", userChoice);
@@ -196,7 +195,6 @@ public class StoryService {
                     }
                 });
     }
-
     // 히스토리 조회
     public List<Map<String, Object>> getGameStagesForUser(Long id) {
         try {
@@ -206,6 +204,7 @@ public class StoryService {
 
             List<Game> userGames = gameRepository.findByUser_Id(user.getId());
             if (userGames.isEmpty()) {
+//                logger.warn("[Service] No games found for userId: {}", id);
                 throw new EntityNotFoundException("No games found for the given userId: " + id);
             }
 
@@ -229,6 +228,7 @@ public class StoryService {
                         } else if (stage.getStageNumber() == 5) {
                             byte[] endingImage = stage.getImageUrl();
                             try {
+                                System.out.println(Arrays.toString(endingImage));
                                 result.put("imageUrl", endingImage);
                             } catch (IllegalArgumentException e) {
                                 logger.error("[Service] Error reading S3 file at path: {}. Error: {}", endingImage, e.getMessage());
