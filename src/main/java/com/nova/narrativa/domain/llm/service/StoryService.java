@@ -125,6 +125,13 @@ public class StoryService {
                         Game game = gameRepository.findById(Long.parseLong(gameId))
                                 .orElseThrow(() -> new RuntimeException("Game not found"));
 
+                        // 마지막 스테이지를 조회하여 EndTime 설정
+                        Optional<Stage> lastStageOptional = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId));
+                        lastStageOptional.ifPresent(lastStage -> {
+                            lastStage.setEndTime(LocalDateTime.now());
+                            stageRepository.save(lastStage);
+                        });
+
                         int stageNumber = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId))
                                 .map(Stage::getStageNumber)
                                 .orElse(0) + 1;
