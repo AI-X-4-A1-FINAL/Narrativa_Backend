@@ -15,11 +15,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.Map;
+
 @Aspect
 @Component
 @RequiredArgsConstructor
 public class AdminAuthAspect {
-
     private final AuthService authService;
 
     @Around("@annotation(com.nova.narrativa.domain.admin.util.AdminAuth)")
@@ -37,10 +38,11 @@ public class AdminAuthAspect {
             AdminUser adminUser = authService.findUserByUid(uid)
                     .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + uid));
 
-            // 관리자 권한 확인
-            if (adminUser.getRole() == AdminUser.Role.WAITING) {
+            // 관리자 권한 확인 (SUPER_ADMIN과 SYSTEM_ADMIN만 허용)
+            if (adminUser.getRole() != AdminUser.Role.SUPER_ADMIN &&
+                    adminUser.getRole() != AdminUser.Role.SYSTEM_ADMIN) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("승인 대기 중인 관리자는 접근할 수 없습니다.");
+                        .body(Map.of("message", "해당 기능에 대한 접근 권한이 없습니다."));
             }
 
             // 인증 성공 시 원래 메소드 실행
@@ -48,10 +50,10 @@ public class AdminAuthAspect {
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("인증에 실패했습니다.");
+                    .body(Map.of("message", "인증에 실패했습니다."));
         }
     }
 
