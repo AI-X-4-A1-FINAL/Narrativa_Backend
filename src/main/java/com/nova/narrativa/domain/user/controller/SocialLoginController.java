@@ -276,7 +276,7 @@ public class SocialLoginController {
 
     @GetMapping("/github")
     public void githubLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
-        log.info("code = {}", code);
+        log.info("githubLogin code = {}", code);
         SocialLoginResult socialLoginResult;
         String redirectWithParams = frontUrl + "/home";
         User.LoginType githubLoginType = User.LoginType.GITHUB;
