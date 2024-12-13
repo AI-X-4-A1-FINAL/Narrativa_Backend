@@ -33,6 +33,12 @@ public class GithubApi {
     private final static String GITHUB_AUTH_TOKEN_URI = "https://github.com/login/oauth/access_token";
     private final static String GITHUB_API_URI = "https://api.github.com/user";
 
+    private final RestTemplate restTemplate;
+
+    public GithubApi(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     public String getUserInfo(String code) throws Exception {
         if (code == null) throw new Exception("Failed get authorization code");
 
@@ -41,18 +47,16 @@ public class GithubApi {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON)); // JSON 응답 요청
 
-            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//            params.add("grant_type", "authorization_code");
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("grant_type", "authorization_code");
             params.add("client_id", GITHUB_CLIENT_ID);
             params.add("client_secret", GITHUB_CLIENT_SECRET);
+            params.add("redirect_uri", GITHUB_REDIRECT_URL);
             params.add("code", code);
-//            params.add("redirect_uri", GITHUB_REDIRECT_URL);
 
-            RestTemplate restTemplate = new RestTemplate();
             HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
-            log.info("httpEntity");
+            log.info("httpEntity: {}", httpEntity);
 
             ResponseEntity<Map> response = restTemplate.exchange(
                     GITHUB_AUTH_TOKEN_URI,
@@ -84,10 +88,9 @@ public class GithubApi {
         headers.setBearerAuth(accessToken); // Bearer 토큰 설정
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        RestTemplate rt = new RestTemplate();
         HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = rt.exchange(
+        ResponseEntity<Map> response = restTemplate.exchange(
                 GITHUB_API_URI,
                 HttpMethod.GET,
                 httpEntity,
