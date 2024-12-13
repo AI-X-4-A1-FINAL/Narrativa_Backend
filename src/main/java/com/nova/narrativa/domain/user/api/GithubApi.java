@@ -44,11 +44,11 @@ public class GithubApi {
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON)); // JSON 응답 요청
 
             LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("grant_type", "authorization_code");
+//            params.add("grant_type", "authorization_code");
             params.add("client_id", GITHUB_CLIENT_ID);
             params.add("client_secret", GITHUB_CLIENT_SECRET);
             params.add("code", code);
-            params.add("redirect_uri", GITHUB_REDIRECT_URL);
+//            params.add("redirect_uri", GITHUB_REDIRECT_URL);
 
             RestTemplate restTemplate = new RestTemplate();
             HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
