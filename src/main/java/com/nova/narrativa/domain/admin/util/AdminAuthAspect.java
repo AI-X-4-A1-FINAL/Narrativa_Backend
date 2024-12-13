@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.Map;
 
 @Aspect
@@ -23,10 +23,18 @@ import java.util.Map;
 public class AdminAuthAspect {
     private final AuthService authService;
 
+    @Value("${environments.narrativa-admin.url}")
+    private String adminUrl;
+
     @Around("@annotation(com.nova.narrativa.domain.admin.util.AdminAuth)")
     public Object authenticateAdmin(ProceedingJoinPoint joinPoint) throws Throwable {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
         String authorizationHeader = request.getHeader("Authorization");
+
+        // OPTIONS 요청 처리
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return handleOptionsRequest();
+        }
 
         try {
             // 토큰 추출 및 검증
@@ -46,15 +54,43 @@ public class AdminAuthAspect {
             }
 
             // 인증 성공 시 원래 메소드 실행
-            return joinPoint.proceed();
+            Object result = joinPoint.proceed();
+
+            // 응답에 CORS 헤더 추가
+            if (result instanceof ResponseEntity) {
+                return addCorsHeaders((ResponseEntity<?>) result);
+            }
+
+            return result;
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", e.getMessage()));
+            return addCorsHeaders(ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage())));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "인증에 실패했습니다."));
+            return addCorsHeaders(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증에 실패했습니다.")));
         }
+    }
+
+    private ResponseEntity<?> handleOptionsRequest() {
+        return ResponseEntity
+                .ok()
+                .header("Access-Control-Allow-Origin", adminUrl)
+                .header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                .header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+                .header("Access-Control-Allow-Credentials", "true")
+                .header("Access-Control-Max-Age", "3600")
+                .build();
+    }
+
+    private ResponseEntity<?> addCorsHeaders(ResponseEntity<?> response) {
+        return ResponseEntity
+                .status(response.getStatusCode())
+                .header("Access-Control-Allow-Origin", adminUrl)
+                .header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                .header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+                .header("Access-Control-Allow-Credentials", "true")
+                .body(response.getBody());
     }
 
     private String extractToken(String authorizationHeader) {
