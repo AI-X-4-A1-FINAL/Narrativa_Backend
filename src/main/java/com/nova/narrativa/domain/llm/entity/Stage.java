@@ -30,6 +30,7 @@ public class Stage {
     private byte[] imageUrl;
 
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String choices; // 스토리 선택지
 
     @Column
@@ -38,7 +39,7 @@ public class Stage {
     @Column
     private LocalDateTime endTime; // 스테이지 종료 시간
 
-    @Column
+    @Column(columnDefinition = "LONGTEXT")
     private String story; //
 
     @Column
