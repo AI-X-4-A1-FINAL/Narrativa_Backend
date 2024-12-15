@@ -34,6 +34,7 @@ public class TemplateService {
     }
 
 
+
     public TemplateDTO getTemplateById(Long id) {
         Template template = templateRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No template found with id: " + id));

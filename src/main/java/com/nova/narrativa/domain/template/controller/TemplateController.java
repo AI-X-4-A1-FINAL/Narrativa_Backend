@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/templates")
 public class TemplateController {
@@ -16,6 +18,13 @@ public class TemplateController {
     public TemplateController(TemplateService templateService) {
         this.templateService = templateService;
     }
+
+    @GetMapping
+    public ResponseEntity<List<TemplateDTO>> getAllTemplates() {
+        List<TemplateDTO> templates = templateService.getAllTemplates();
+        return ResponseEntity.ok(templates);
+    }
+
 
     @GetMapping("/{genre}/{type}")
     public ResponseEntity<TemplateDTO> getTemplate(

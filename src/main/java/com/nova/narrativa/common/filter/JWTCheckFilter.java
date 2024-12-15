@@ -31,6 +31,7 @@ public class JWTCheckFilter extends OncePerRequestFilter {
                 path.startsWith("/api/notices")     ||  // 알람 제외
                 path.startsWith("/api/music")       ||  // 관리자 S3 관리 경로 제외
                 path.startsWith("/api/prompts")     ||  // 관리자 프롬프트 편집 제외
+                path.startsWith("/api/templates")     ||  // 관리자 프롬프트 편집 제외
                 path.startsWith("/api/health")      ||  // 관리자 배포상태 체크 제외
                 path.startsWith("/v3/api-docs")     ||  // 스웨거 명세서
                 path.startsWith("/swagger-ui"))         // 스웨거 명세서
