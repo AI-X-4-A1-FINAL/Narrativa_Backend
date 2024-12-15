@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class PromptService {
-
     private final PromptRepository promptRepository;
 
     @Autowired
@@ -22,53 +21,11 @@ public class PromptService {
         this.promptRepository = promptRepository;
     }
 
-    public PromptDTO getRandomPromptByGenre(String genre) {
-        List<Prompt> prompts = promptRepository.findByGenreAndIsActiveTrue(genre);
-        if (prompts.isEmpty()) {
-            throw new RuntimeException("No prompt found for genre: " + genre);
-        }
-
-        Random random = new Random();
-        Prompt prompt = prompts.get(random.nextInt(prompts.size()));
-        return PromptDTO.fromEntity(prompt);
-    }
-
+    // 1. 조회 관련 메서드들
     public PromptDTO getPrompt(Long id) {
         Prompt prompt = promptRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No prompt found with id: " + id));
         return PromptDTO.fromEntity(prompt);
-    }
-
-    @Transactional
-    public PromptDTO createPrompt(PromptDTO promptDTO) {
-        Prompt prompt = new Prompt();
-        prompt.setGenre(promptDTO.getGenre());
-        prompt.setTitle(promptDTO.getTitle());
-        prompt.setContent(promptDTO.getContent());
-        prompt.setActive(true);
-
-        Prompt savedPrompt = promptRepository.save(prompt);
-        return PromptDTO.fromEntity(savedPrompt);
-    }
-
-    @Transactional
-    public PromptDTO updatePrompt(Long id, PromptDTO promptDTO) {
-        Prompt prompt = promptRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No prompt found with id: " + id));
-
-        // 수정할 필드들 업데이트
-        if (promptDTO.getGenre() != null) {
-            prompt.setGenre(promptDTO.getGenre());
-        }
-        if (promptDTO.getTitle() != null) {
-            prompt.setTitle(promptDTO.getTitle());
-        }
-        if (promptDTO.getContent() != null) {
-            prompt.setContent(promptDTO.getContent());
-        }
-
-        Prompt updatedPrompt = promptRepository.save(prompt);
-        return PromptDTO.fromEntity(updatedPrompt);
     }
 
     public List<PromptDTO> getAllPrompts() {
@@ -77,12 +34,63 @@ public class PromptService {
                 .collect(Collectors.toList());
     }
 
+    public List<PromptDTO> getPrompts() {
+        return promptRepository.findAll().stream()
+                .map(PromptDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public PromptDTO getRandomPromptByGenre(String genre) {
+        List<Prompt> prompts = promptRepository.findByGenreAndIsActiveTrue(genre);
+        if (prompts.isEmpty()) {
+            throw new RuntimeException("No prompt found for genre: " + genre);
+        }
+        return PromptDTO.fromEntity(prompts.get(new Random().nextInt(prompts.size())));
+    }
+
+    // 2. 검색 관련 메서드들
     public List<PromptDTO> searchPromptsByGenre(String genre) {
         return promptRepository.findByGenreContainingAndIsActiveTrue(genre).stream()
                 .map(PromptDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
+    public List<PromptDTO> searchAllPromptsByGenre(String genre) {
+        return promptRepository.findByGenreContaining(genre).stream()
+                .map(PromptDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
 
+    // 3. 수정 관련 메서드들
+    @Transactional
+    public PromptDTO createPrompt(PromptDTO promptDTO) {
+        Prompt prompt = new Prompt();
+        prompt.setGenre(promptDTO.getGenre());
+        prompt.setTitle(promptDTO.getTitle());
+        prompt.setContent(promptDTO.getContent());
+        prompt.setActive(promptDTO.isActive());  // 활성화 상태 설정
 
+        return PromptDTO.fromEntity(promptRepository.save(prompt));
+    }
+
+    @Transactional
+    public PromptDTO updatePrompt(Long id, PromptDTO promptDTO) {
+        Prompt prompt = promptRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No prompt found with id: " + id));
+
+        if (promptDTO.getGenre() != null) prompt.setGenre(promptDTO.getGenre());
+        if (promptDTO.getTitle() != null) prompt.setTitle(promptDTO.getTitle());
+        if (promptDTO.getContent() != null) prompt.setContent(promptDTO.getContent());
+        prompt.setActive(promptDTO.isActive());
+
+        return PromptDTO.fromEntity(promptRepository.save(prompt));
+    }
+
+    @Transactional
+    public PromptDTO togglePromptStatus(Long id) {
+        Prompt prompt = promptRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No prompt found with id: " + id));
+        prompt.setActive(!prompt.isActive());
+        return PromptDTO.fromEntity(promptRepository.save(prompt));
+    }
 }

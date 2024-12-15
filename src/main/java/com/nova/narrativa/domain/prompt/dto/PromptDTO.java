@@ -11,6 +11,7 @@ public class PromptDTO {
     private String title;
     private String genre;
     private String content;
+    private boolean isActive;
 
     public static PromptDTO fromEntity(Prompt prompt) {
         PromptDTO dto = new PromptDTO();
@@ -18,6 +19,7 @@ public class PromptDTO {
         dto.setGenre(prompt.getGenre());
         dto.setTitle(prompt.getTitle());
         dto.setContent(prompt.getContent());
+        dto.setActive(prompt.isActive());
         return dto;
     }
 }
