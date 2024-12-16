@@ -121,6 +121,7 @@ public interface StageRepository extends JpaRepository<Stage, Long> {
     WHERE g.user_id = :userId
     GROUP BY g.game_id, g.genre
     HAVING MAX(CASE WHEN s.stage_number = 6 THEN 1 ELSE 0 END) = 1
+    ORDER BY MAX(s.end_time) DESC, g.game_id DESC
 """)
     List<Map<String, Object>> findGameStagesWithUserId(@Param("userId") Long userId);
 
