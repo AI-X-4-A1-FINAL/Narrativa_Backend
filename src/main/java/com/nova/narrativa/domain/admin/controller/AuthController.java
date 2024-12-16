@@ -20,7 +20,6 @@ public class AuthController {
     private final AdminService adminService;
 
     @PostMapping("/verify")
-    @CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
     public ResponseEntity<?> verifyToken(@RequestBody TokenRequest request) {
         try {
             FirebaseToken decodedToken = authService.verifyToken(request.getIdToken());
@@ -45,7 +44,6 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
     public ResponseEntity<?> registerAdmin(@RequestBody TokenRequest request) {
         try {
             FirebaseToken decodedToken = authService.verifyToken(request.getIdToken());

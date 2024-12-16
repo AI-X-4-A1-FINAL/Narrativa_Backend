@@ -189,6 +189,15 @@ public class MusicService {
         }
     }
 
+    private String getGenreFolderPath(MusicGeneration.Genre genre) {
+        return switch (genre) {
+            case MYSTERY -> "DetectiveMystery";
+            case SIMULATION -> "RaisingSimulation";
+            case ROMANCE -> "RomanticFantasy";
+            case SURVIVAL -> "SurvivalHorror";
+        };
+    }
+
     /**
      * 관리자용 - 음악 파일 업로드
      */
@@ -197,16 +206,14 @@ public class MusicService {
             String originalFilename = file.getOriginalFilename();
             String extension = Objects.requireNonNull(originalFilename).substring(originalFilename.lastIndexOf("."));
 
-            String formattedGenre = formatGenre(genre.name());
-            String prefix = "Detective" + formattedGenre;
-            String folderPath = prefix + "/";
-
-            // 현재 폴더의 파일들을 조회하여 다음 번호 결정
-            int nextNumber = getNextFileNumber(folderPath);
-
-            // 최종 파일명 생성 (예: DetectiveMystery/DetectiveMystery_001.mp3)
+            // 장르별 파일명 생성 (예: DetectiveMystery/DetectiveMystery_001.mp3)
+            String folderPath = getGenreFolderPath(genre);
+            int nextNumber = getNextFileNumber(folderPath + "/");
             String filename = String.format("%s/%s_%03d%s",
-                    prefix, prefix, nextNumber, extension);
+                    folderPath,
+                    folderPath,
+                    nextNumber,
+                    extension);
 
             // 파일 업로드
             PutObjectRequest putRequest = PutObjectRequest.builder()
@@ -218,14 +225,14 @@ public class MusicService {
             s3Client.putObject(putRequest,
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-            // 장르 태그 추가 (첫 글자만 대문자로 설정)
+            // 장르 태그 추가
             s3Client.putObjectTagging(PutObjectTaggingRequest.builder()
                     .bucket(bucketName)
                     .key(filename)
                     .tagging(Tagging.builder()
                             .tagSet(Tag.builder()
                                     .key("Genre")
-                                    .value(formattedGenre)  // formatGenre 적용
+                                    .value(formatGenre(genre.name()))
                                     .build())
                             .build())
                     .build());
@@ -236,7 +243,7 @@ public class MusicService {
                     file.getContentType(),
                     java.time.Instant.now(),
                     generateAdminPresignedUrl(filename),
-                    formattedGenre  // formatGenre 적용
+                    formatGenre(genre.name())
             );
 
         } catch (IOException | S3Exception e) {

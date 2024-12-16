@@ -12,10 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/prompts")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "${environments.narrativa-admin.url}",
-        allowCredentials = "true",
-        allowedHeaders = "*",
-        exposedHeaders = "*")
 public class PromptController {
     private final PromptService promptService;
 
