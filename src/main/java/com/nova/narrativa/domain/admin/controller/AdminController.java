@@ -19,7 +19,6 @@ public class AdminController {
 
     @AdminAuth
     @GetMapping("/users")
-    @CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
     public ResponseEntity<?> getAllAdmins() {
         List<AdminResponse> admins = adminService.getAllAdmins();
         return ResponseEntity.ok(Map.of("data", admins));
@@ -27,7 +26,6 @@ public class AdminController {
 
     @AdminAuth
     @PatchMapping("/users/{userId}/status")
-    @CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
     public ResponseEntity<?> updateAdminStatus(
             @PathVariable Long userId,
             @RequestBody UpdateStatusRequest request) {
@@ -45,7 +43,6 @@ public class AdminController {
 
     @AdminAuth
     @PatchMapping("/users/{userId}/role")
-    @CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
     public ResponseEntity<?> updateAdminRole(
             @PathVariable Long userId,
             @RequestBody UpdateRoleRequest request) {

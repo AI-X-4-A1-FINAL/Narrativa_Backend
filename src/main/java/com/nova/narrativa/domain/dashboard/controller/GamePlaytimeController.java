@@ -4,7 +4,6 @@ import com.nova.narrativa.domain.admin.util.AdminAuth;
 import com.nova.narrativa.domain.dashboard.service.GamePlaytimeService;
 import com.nova.narrativa.domain.dashboard.util.TimeFormatter;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +24,6 @@ public class GamePlaytimeController {
 
     @AdminAuth
     @GetMapping("/games/playtime")
-    @CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
     public ResponseEntity<?> getGamePlaytimes() {
         List<Map<String, Object>> result = gamePlaytimeService.getAveragePlaytimePerGame().stream()
                 .map(pt -> {
