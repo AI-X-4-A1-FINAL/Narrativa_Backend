@@ -206,19 +206,14 @@ public class MusicService {
             String originalFilename = file.getOriginalFilename();
             String extension = Objects.requireNonNull(originalFilename).substring(originalFilename.lastIndexOf("."));
 
-            String formattedGenre = formatGenre(genre.name());
+            // 장르별 파일명 생성 (예: DetectiveMystery/DetectiveMystery_001.mp3)
             String folderPath = getGenreFolderPath(genre);
-
-            // 현재 폴더의 파일들을 조회하여 다음 번호 결정
             int nextNumber = getNextFileNumber(folderPath + "/");
-
-            // 최종 파일명 생성 (예: DetectiveMystery/DetectiveMystery_001.mp3)
             String filename = String.format("%s/%s_%03d%s",
-                    folderPath,                  // 폴더 경로 (예: DetectiveMystery)
-                    getGenreFolderPath(genre),   // 파일명 접두어 (예: DetectiveMystery)
-                    nextNumber,                  // 일련번호 (예: 001)
-                    extension                    // 파일 확장자 (예: .mp3)
-            );
+                    folderPath,
+                    folderPath,
+                    nextNumber,
+                    extension);
 
             // 파일 업로드
             PutObjectRequest putRequest = PutObjectRequest.builder()
@@ -237,7 +232,7 @@ public class MusicService {
                     .tagging(Tagging.builder()
                             .tagSet(Tag.builder()
                                     .key("Genre")
-                                    .value(formattedGenre)
+                                    .value(formatGenre(genre.name()))
                                     .build())
                             .build())
                     .build());
@@ -248,7 +243,7 @@ public class MusicService {
                     file.getContentType(),
                     java.time.Instant.now(),
                     generateAdminPresignedUrl(filename),
-                    formattedGenre
+                    formatGenre(genre.name())
             );
 
         } catch (IOException | S3Exception e) {
