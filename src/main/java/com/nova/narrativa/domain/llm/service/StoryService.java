@@ -197,53 +197,18 @@ public class StoryService {
     }
 
     // 히스토리 조회
-    public List<Map<String, Object>> getGameStagesForUser(Long id) {
+    public List<Map<String, Object>> getGameStagesForUser(Long userId) {
         try {
-            // 유저 조회 및 게임 리스트 가져오기
-            User user = userRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("User not found with userId: " + id));
+            // 새로운 쿼리를 호출하여 한 번의 조회로 데이터를 가져옴
+            List<Map<String, Object>> gameStages = stageRepository.findGameStagesWithUserId(userId);
 
-            List<Game> userGames = gameRepository.findByUser_Id(user.getId());
-            if (userGames.isEmpty()) {
-//                logger.warn("[Service] No games found for userId: {}", id);
-                throw new EntityNotFoundException("No games found for the given userId: " + id);
+            if (gameStages.isEmpty()) {
+                throw new EntityNotFoundException("No games found for the given userId: " + userId);
             }
 
-            List<Map<String, Object>> resultList = new ArrayList<>();
-
-            // 각 게임의 스테이지 처리
-            for (Game game : userGames) {
-                List<Stage> stages = stageRepository.findByGame_GameId(game.getGameId());
-
-                // stageNumber가 6까지 저장된 게임인지 확인
-                boolean hasStage6 = stages.stream().anyMatch(stage -> stage.getStageNumber() == 6);
-
-                if (hasStage6) {
-                    Map<String, Object> result = new HashMap<>();
-                    result.put("gameId", game.getGameId());
-                    result.put("genre", game.getGenre());
-
-                    for (Stage stage : stages) {
-                        if (stage.getStageNumber() == 6) {
-                            result.put("story", stage.getStory());
-                        } else if (stage.getStageNumber() == 5) {
-                            byte[] endingImage = stage.getImageUrl();
-                            try {
-                                result.put("imageUrl", endingImage);
-                            } catch (IllegalArgumentException e) {
-                                logger.error("[Service] Error reading S3 file at path: {}. Error: {}", endingImage, e.getMessage());
-                                result.put("imageUrl", "/default-thumbnail.jpg");
-                            }
-                        }
-                    }
-                    resultList.add(result);
-                } else {
-                    logger.info("[Service] GameId {} does not have stageNumber 6", game.getGameId());
-                }
-            }
-            return resultList;
+            return gameStages;
         } catch (Exception e) {
-            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", id, e.getMessage());
+            logger.error("[Service] Error fetching game stages for userId: {}. Details: {}", userId, e.getMessage());
             throw new RuntimeException("Error fetching game stages: " + e.getMessage());
         }
     }
