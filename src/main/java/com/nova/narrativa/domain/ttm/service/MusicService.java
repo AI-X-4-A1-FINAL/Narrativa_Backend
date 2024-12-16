@@ -214,7 +214,11 @@ public class MusicService {
 
             // 최종 파일명 생성 (예: DetectiveMystery/DetectiveMystery_001.mp3)
             String filename = String.format("%s/%s_%03d%s",
-                    folderPath, folderPath, nextNumber, extension);
+                    folderPath,                  // 폴더 경로 (예: DetectiveMystery)
+                    getGenreFolderPath(genre),   // 파일명 접두어 (예: DetectiveMystery)
+                    nextNumber,                  // 일련번호 (예: 001)
+                    extension                    // 파일 확장자 (예: .mp3)
+            );
 
             // 파일 업로드
             PutObjectRequest putRequest = PutObjectRequest.builder()
