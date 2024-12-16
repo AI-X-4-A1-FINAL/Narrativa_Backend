@@ -24,9 +24,11 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String requestApiKey = request.getHeader(API_KEY_HEADER);
+        String requestUri = request.getRequestURI();
 
         // ML 서버에서의 API 요청인 경우에만 API 키 검증
-        if (request.getRequestURI().startsWith("/api/prompts")) {
+        if (requestUri.startsWith("/api/admin/prompts/random") ||
+                requestUri.startsWith("/api/templates/")) {
             if (requestApiKey == null || !requestApiKey.equals(validApiKey)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
