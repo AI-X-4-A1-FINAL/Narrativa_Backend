@@ -24,9 +24,6 @@ public class MusicController {
     private final MusicService musicService;
     private final AuthService authService;
 
-    @Value("${environments.narrativa-admin.url}")
-    private String narrativaAdminUrl;
-
     public MusicController(MusicService musicService, AuthService authService) {
         this.musicService = musicService;
         this.authService = authService;
@@ -49,7 +46,6 @@ public class MusicController {
     }
 
     @GetMapping("/files")
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<?> getAllMusicFiles(@RequestHeader("Authorization") String authorizationHeader) {
         try {
             String idToken = extractToken(authorizationHeader);
@@ -64,7 +60,6 @@ public class MusicController {
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<?> uploadMusic(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestParam("file") MultipartFile file,
@@ -106,7 +101,6 @@ public class MusicController {
     }
 
     @DeleteMapping("/delete/{filename}")
-    @CrossOrigin(origins = "${environments.narrativa-admin.url}", allowCredentials = "true")
     public ResponseEntity<?> deleteMusic(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String filename) {

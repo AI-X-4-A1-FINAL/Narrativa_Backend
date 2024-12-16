@@ -3,14 +3,12 @@ package com.nova.narrativa.domain.dashboard.controller;
 import com.nova.narrativa.domain.admin.util.AdminAuth;
 import com.nova.narrativa.domain.dashboard.service.TargetGroupHealthService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/health")
-@CrossOrigin(origins = {"${environments.narrativa-admin.url}", "${environments.narrativa-front.url}"}, allowCredentials = "true")
 public class HealthCheckController {
     private final TargetGroupHealthService targetGroupHealthService;
 
