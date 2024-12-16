@@ -10,4 +10,5 @@ import java.util.List;
 public interface GameRepository extends JpaRepository<Game, Long> {
     // 특정 사용자의 게임 목록 조회
     List<Game> findByUser_Id(Long userId);
+
 }
