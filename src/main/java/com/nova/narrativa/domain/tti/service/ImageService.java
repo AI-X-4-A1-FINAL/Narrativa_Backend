@@ -72,7 +72,10 @@ public class ImageService {
             prefix = "survival_images/";
         } else if ("Romance".equalsIgnoreCase(genre)) {
             prefix = "romance_images/";
-        } else {
+        } else if("Simulation".equalsIgnoreCase(genre)) {
+            prefix = "simulation_images/";
+        }
+        else {
             // 다른 장르에 대해서는 기본값 설정 또는 예외 처리
             throw new IllegalArgumentException("Unsupported genre: " + genre);
         }
