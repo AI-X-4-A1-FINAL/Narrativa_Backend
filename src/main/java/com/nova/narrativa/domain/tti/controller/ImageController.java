@@ -24,8 +24,8 @@ public class ImageController {
 
     // Endpoint to get a random image presigned URL as a JSON response
     @GetMapping("/random")
-    public ResponseEntity<?> getRandomImage() {
-        String imageUrl = imageService.getRandomImage();
+    public ResponseEntity<?> getRandomImage(@RequestParam("genre") String genre) {
+        String imageUrl = imageService.getRandomImage(genre);
         return ResponseEntity.ok(new ImageResponse(imageUrl));
     }
 

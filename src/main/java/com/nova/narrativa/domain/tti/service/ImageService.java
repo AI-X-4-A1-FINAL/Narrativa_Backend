@@ -64,11 +64,22 @@ public class ImageService {
     @Value("${aws.s3.images-bucket}")
     private String bucketName;
 
-    public List<String> getImageFiles() {
+    public List<String> getImageFiles(String genre) {
+
+        // 장르에 맞는 prefix 설정
+        String prefix;
+        if ("Survival".equalsIgnoreCase(genre)) {
+            prefix = "survival_images/";
+        } else if ("Romance".equalsIgnoreCase(genre)) {
+            prefix = "romance_images/";
+        } else {
+            // 다른 장르에 대해서는 기본값 설정 또는 예외 처리
+            throw new IllegalArgumentException("Unsupported genre: " + genre);
+        }
 
         var request = ListObjectsV2Request.builder()
                 .bucket(bucketName)
-                .prefix("survival_images/")
+                .prefix(prefix)
                 .build();
 
         var response = s3Client.listObjectsV2(request);
@@ -96,8 +107,8 @@ public class ImageService {
     }
 
     // Get a random image file from the list of image files
-    public String getRandomImage() {
-        List<String> imageFiles = getImageFiles();
+    public String getRandomImage(String genre) {
+        List<String> imageFiles = getImageFiles(genre);
 
         if (imageFiles.isEmpty()) {
             throw new NoImageFileFoundException("No image files found in the bucket.");
