@@ -198,7 +198,7 @@ public class S3ImageService {
         try {
             PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(builder ->
                     builder.getObjectRequest(getObjectBuilder -> getObjectBuilder.bucket(bucketName).key(key))
-                            .signatureDuration(Duration.ofMinutes(10))
+                            .signatureDuration(Duration.ofDays(365))
             );
 
             return presignedRequest.url().toString();
