@@ -15,6 +15,18 @@ import java.util.List;
 public class PromptController {
     private final PromptService promptService;
 
+    @GetMapping("/random")
+    public ResponseEntity<PromptDTO> getRandomPrompt(@RequestParam String genre) {
+        try {
+            PromptDTO prompt = promptService.getRandomPromptByGenre(genre);
+            return ResponseEntity.ok(prompt);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // 어드민용 메서드
+
     // 활성화된 프롬프트만 조회
     @AdminAuth
     @GetMapping
@@ -61,16 +73,6 @@ public class PromptController {
     public ResponseEntity<PromptDTO> createPrompt(@RequestBody PromptDTO promptDTO) {
         PromptDTO createdPrompt = promptService.createPrompt(promptDTO);
         return ResponseEntity.ok(createdPrompt);
-    }
-
-    @GetMapping("/random")
-    public ResponseEntity<PromptDTO> getRandomPrompt(@RequestParam String genre) {
-        try {
-            PromptDTO prompt = promptService.getRandomPromptByGenre(genre);
-            return ResponseEntity.ok(prompt);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     @AdminAuth

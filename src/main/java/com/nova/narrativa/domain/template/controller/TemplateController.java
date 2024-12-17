@@ -1,49 +1,46 @@
 package com.nova.narrativa.domain.template.controller;
 
+import com.nova.narrativa.domain.admin.util.AdminAuth;
 import com.nova.narrativa.domain.template.dto.TemplateDTO;
 import com.nova.narrativa.domain.template.service.TemplateService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/templates")
+@RequiredArgsConstructor
 public class TemplateController {
 
     private final TemplateService templateService;
 
-    @Autowired
-    public TemplateController(TemplateService templateService) {
-        this.templateService = templateService;
+    // ML 서비스용 엔드포인트
+    @GetMapping("/api/templates/{genre}/{type}")
+    public ResponseEntity<TemplateDTO> getTemplateForML(
+            @PathVariable String genre,
+            @PathVariable String type) {
+        TemplateDTO template = templateService.getTemplate(genre, type);
+        return ResponseEntity.ok(template);
     }
 
-    @GetMapping
+    // 관리자용 엔드포인트들
+    @AdminAuth
+    @GetMapping("/api/admin/templates")
     public ResponseEntity<List<TemplateDTO>> getAllTemplates() {
         List<TemplateDTO> templates = templateService.getAllTemplates();
         return ResponseEntity.ok(templates);
     }
 
-
-    @GetMapping("/{genre}/{type}")
-    public ResponseEntity<TemplateDTO> getTemplate(
-            @PathVariable String genre,
-            @PathVariable String type) {
-        TemplateDTO template = templateService.getTemplate(genre, type); // 수정된 로직 호출
-        return ResponseEntity.ok(template);
-    }
-
-
-    // 등록 (Create)
-    @PostMapping
+    @AdminAuth
+    @PostMapping("/api/admin/templates")
     public ResponseEntity<TemplateDTO> createTemplate(@RequestBody TemplateDTO templateDTO) {
         TemplateDTO createdTemplate = templateService.createTemplate(templateDTO);
         return ResponseEntity.ok(createdTemplate);
     }
 
-    // 수정 (Update)
-    @PutMapping("/{id}")
+    @AdminAuth
+    @PutMapping("/api/admin/templates/{id}")
     public ResponseEntity<TemplateDTO> updateTemplate(
             @PathVariable Long id,
             @RequestBody TemplateDTO templateDTO) {
@@ -51,8 +48,8 @@ public class TemplateController {
         return ResponseEntity.ok(updatedTemplate);
     }
 
-    // 삭제 (Delete)
-    @DeleteMapping("/{id}")
+    @AdminAuth
+    @DeleteMapping("/api/admin/templates/{id}")
     public ResponseEntity<Void> deleteTemplate(@PathVariable Long id) {
         templateService.deleteTemplate(id);
         return ResponseEntity.noContent().build();
