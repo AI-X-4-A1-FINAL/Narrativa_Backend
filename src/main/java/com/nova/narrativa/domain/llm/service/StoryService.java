@@ -103,10 +103,17 @@ public class StoryService {
 
     @Transactional
     public Mono<String> continueStory(String gameId, String genre, String userChoice) {
+        // 현재 스테이지 번호를 조회 (기본값은 1)
+        int currentStage = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId))
+                .map(Stage::getStageNumber)
+                .orElse(0) + 1;  // 다음 스테이지 번호 계산
+
+        // FastAPI로 보낼 요청 객체
         Map<String, Object> request = Map.of(
                 "genre", genre,
                 "user_choice", userChoice,
-                "game_id", gameId
+                "game_id", gameId,
+                "stage", currentStage
         );
 
         return webClient.post()
@@ -125,20 +132,17 @@ public class StoryService {
                         Game game = gameRepository.findById(Long.parseLong(gameId))
                                 .orElseThrow(() -> new RuntimeException("Game not found"));
 
-                        // 마지막 스테이지를 조회하여 EndTime 설정
-                        Optional<Stage> lastStageOptional = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId));
-                        lastStageOptional.ifPresent(lastStage -> {
-                            lastStage.setEndTime(LocalDateTime.now());
-                            stageRepository.save(lastStage);
-                        });
+                        // 이전 스테이지의 EndTime 설정
+                        stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId))
+                                .ifPresent(lastStage -> {
+                                    lastStage.setEndTime(LocalDateTime.now());
+                                    stageRepository.save(lastStage);
+                                });
 
-                        int stageNumber = stageRepository.findTopByGame_GameIdOrderByStageNumberDesc(Long.parseLong(gameId))
-                                .map(Stage::getStageNumber)
-                                .orElse(0) + 1;
-
+                        // 새로운 스테이지 생성 및 저장
                         Stage stage = new Stage();
                         stage.setGame(game);
-                        stage.setStageNumber(stageNumber);
+                        stage.setStageNumber(currentStage);
                         stage.setUserChoice(userChoice);
                         stage.setChoices(String.join(", ", choices));
                         stage.setStory(story);
@@ -148,7 +152,8 @@ public class StoryService {
                         return objectMapper.writeValueAsString(Map.of(
                                 "story", story,
                                 "choices", choices,
-                                "game_id", gameId
+                                "game_id", gameId,
+                                "stage", currentStage  // FastAPI에 반환할 stage 값
                         ));
                     } catch (Exception e) {
                         throw new RuntimeException("Error processing story: " + e.getMessage());
